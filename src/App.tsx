@@ -1,8 +1,19 @@
-import './App.css'
-import { StoreTest } from './components/common/StoreTest'
+import './App.css';
+import { EditorLayout } from './components/editor/EditorLayout';
+import { Toolbar } from './components/editor/Toolbar';
+import { LeftSidebar } from './components/editor/LeftSidebar';
+import { Canvas } from './components/editor/Canvas';
+import { PropertyPanel } from './components/properties/PropertyPanel';
 
 function App() {
-  return <StoreTest />
+  return (
+    <EditorLayout
+      toolbar={<Toolbar />}
+      leftSidebar={<LeftSidebar />}
+      canvas={<Canvas />}
+      rightSidebar={<PropertyPanel />}
+    />
+  );
 }
 
-export default App
+export default App;

@@ -1,0 +1,138 @@
+// Component palette with categorized components
+
+import { useState } from 'react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
+import { COMPONENT_LIBRARY, CATEGORIES, getComponentsByCategory } from '../../constants/components';
+import { useComponentStore } from '../../stores';
+import type { ComponentNode } from '../../types';
+
+export function ComponentPalette() {
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
+    new Set(['layout', 'input', 'display'])
+  );
+  const componentStore = useComponentStore();
+
+  const toggleCategory = (categoryId: string) => {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(categoryId)) {
+        next.delete(categoryId);
+      } else {
+        next.add(categoryId);
+      }
+      return next;
+    });
+  };
+
+  const addComponent = (type: keyof typeof COMPONENT_LIBRARY) => {
+    const def = COMPONENT_LIBRARY[type];
+    const parentId = componentStore.root?.id;
+
+    if (!parentId) {
+      // Create root if it doesn't exist
+      const root: ComponentNode = {
+        id: 'root',
+        type: 'Box',
+        name: 'Root',
+        props: { width: 80, height: 24 },
+        layout: {
+          type: 'flexbox',
+          direction: 'column',
+          gap: 1,
+          padding: 2,
+        },
+        style: {
+          border: true,
+          borderStyle: 'single',
+        },
+        events: {},
+        children: [],
+        locked: false,
+        hidden: false,
+        collapsed: false,
+      };
+      componentStore.setRoot(root);
+      return;
+    }
+
+    const newComponent: Omit<ComponentNode, 'id'> = {
+      type: def.type,
+      name: def.name,
+      props: { ...def.defaultProps },
+      layout: { ...def.defaultLayout },
+      style: { ...def.defaultStyle },
+      events: { ...def.defaultEvents },
+      children: [],
+      locked: false,
+      hidden: false,
+      collapsed: false,
+    };
+
+    componentStore.addComponent(parentId, newComponent);
+  };
+
+  return (
+    <div className="p-4">
+      <h2 className="text-sm font-semibold mb-4 text-muted-foreground uppercase">
+        Components
+      </h2>
+
+      <div className="space-y-2">
+        {CATEGORIES.map((category) => {
+          const isExpanded = expandedCategories.has(category.id);
+          const components = getComponentsByCategory(category.id);
+
+          return (
+            <div key={category.id}>
+              {/* Category Header */}
+              <button
+                onClick={() => toggleCategory(category.id)}
+                className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-accent rounded text-sm font-medium"
+              >
+                {isExpanded ? (
+                  <ChevronDown className="w-4 h-4" />
+                ) : (
+                  <ChevronRight className="w-4 h-4" />
+                )}
+                {category.name}
+                <span className="ml-auto text-xs text-muted-foreground">
+                  {components.length}
+                </span>
+              </button>
+
+              {/* Components */}
+              {isExpanded && (
+                <div className="ml-2 mt-1 space-y-1">
+                  {components.map((component) => {
+                    const IconComponent = (LucideIcons as any)[component.icon];
+
+                    return (
+                      <button
+                        key={component.type}
+                        onClick={() => addComponent(component.type)}
+                        className="w-full p-2 rounded border border-border hover:bg-accent hover:border-accent-foreground transition-colors flex items-center gap-3 text-left"
+                      >
+                        {IconComponent && (
+                          <IconComponent className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm truncate">
+                            {component.name}
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {component.description}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
