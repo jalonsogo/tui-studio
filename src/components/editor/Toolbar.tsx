@@ -1,24 +1,28 @@
 // Top toolbar with controls
 
+import { useState } from 'react';
 import { Undo2, Redo2, ZoomIn, ZoomOut, Grid3x3, Save, Download } from 'lucide-react';
 import { useComponentStore, useCanvasStore } from '../../stores';
+import { ExportModal } from '../export/ExportModal';
 
 export function Toolbar() {
   const componentStore = useComponentStore();
   const canvasStore = useCanvasStore();
+  const [exportOpen, setExportOpen] = useState(false);
 
   const canUndo = componentStore.historyIndex > 0;
   const canRedo = componentStore.historyIndex < componentStore.history.length - 1;
 
   return (
-    <div className="h-14 px-4 flex items-center justify-between bg-card">
-      {/* Left - Logo/Title */}
-      <div className="flex items-center gap-4">
-        <h1 className="text-lg font-bold">TUI Designer</h1>
-        <div className="text-sm text-muted-foreground">
-          Phase 2: Editor UI
+    <>
+      <div className="h-14 px-4 flex items-center justify-between bg-card">
+        {/* Left - Logo/Title */}
+        <div className="flex items-center gap-4">
+          <h1 className="text-lg font-bold">TUI Designer</h1>
+          <div className="text-sm text-muted-foreground">
+            Terminal UI Design Tool
+          </div>
         </div>
-      </div>
 
       {/* Center - Tools */}
       <div className="flex items-center gap-2">
@@ -92,11 +96,18 @@ export function Toolbar() {
           <Save className="w-4 h-4" />
           Save
         </button>
-        <button className="px-3 py-1.5 text-sm bg-primary text-primary-foreground hover:bg-primary/90 rounded flex items-center gap-2">
+        <button
+          onClick={() => setExportOpen(true)}
+          className="px-3 py-1.5 text-sm bg-primary text-primary-foreground hover:bg-primary/90 rounded flex items-center gap-2"
+        >
           <Download className="w-4 h-4" />
           Export
         </button>
       </div>
     </div>
+
+      {/* Export Modal */}
+      <ExportModal isOpen={exportOpen} onClose={() => setExportOpen(false)} />
+    </>
   );
 }
