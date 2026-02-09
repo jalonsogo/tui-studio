@@ -205,12 +205,24 @@ function ComponentRenderer({ node, cellWidth, cellHeight, zoom, selectedIds }: C
     }
   };
 
-  const renderContent = () => {
+  // Helper to pad text to specified width
+  const padText = (text: string, width: number, align: 'left' | 'center' | 'right' = 'center'): string => {
+    if (text.length >= width) return text.slice(0, width);
+    const padding = width - text.length;
+    if (align === 'left') return text + ' '.repeat(padding);
+    if (align === 'right') return ' '.repeat(padding) + text;
+    const leftPad = Math.floor(padding / 2);
+    const rightPad = padding - leftPad;
+    return ' '.repeat(leftPad) + text + ' '.repeat(rightPad);
+  };
+
+  // Get plain text content for a component (for bordered rendering)
+  const getTextContent = (): string => {
     switch (node.type) {
       case 'Text':
-        return <span>{node.props.content || 'Text'}</span>;
+        return node.props.content as string || 'Text';
       case 'Button': {
-        const label = node.props.label || 'Button';
+        const label = node.props.label as string || 'Button';
         const iconLeft = (node.props.iconLeftEnabled && node.props.iconLeft) ? node.props.iconLeft as string : '';
         const iconRight = (node.props.iconRightEnabled && node.props.iconRight) ? node.props.iconRight as string : '';
         const number = node.props.number as number | undefined;
@@ -218,29 +230,39 @@ function ComponentRenderer({ node, cellWidth, cellHeight, zoom, selectedIds }: C
 
         if (separated && iconLeft) {
           const leftSection = number !== undefined ? `${iconLeft} ${number}` : iconLeft;
-          return (
-            <span className="font-bold">
-              {leftSection} │ {label}{iconRight ? ` ${iconRight}` : ''}
-            </span>
-          );
+          return `${leftSection} │ ${label}${iconRight ? ` ${iconRight}` : ''}`;
         }
 
-        return (
-          <span className="font-bold">
-            {iconLeft && `${iconLeft} `}{label}{iconRight && ` ${iconRight}`}
-          </span>
-        );
+        const left = iconLeft ? `${iconLeft} ` : '';
+        const right = iconRight ? ` ${iconRight}` : '';
+        return ` ${left}${label}${right} `;
       }
       case 'TextInput':
-        return <span>[{node.props.placeholder || '___________'}]</span>;
-      case 'ProgressBar':
+        return `[${node.props.placeholder || '___________'}]`;
+      case 'ProgressBar': {
         const value = (node.props.value as number) || 0;
         const max = (node.props.max as number) || 100;
         const percentage = Math.floor((value / max) * 20);
-        return <span>[{'█'.repeat(percentage)}{'░'.repeat(20 - percentage)}] {value}/{max}</span>;
+        return `[${'█'.repeat(percentage)}${'░'.repeat(20 - percentage)}] ${value}/${max}`;
+      }
+      case 'Checkbox':
+        return `[${node.props.checked ? '✓' : ' '}] Checkbox`;
+      case 'Spinner':
+        return '⣾ Loading...';
+      default:
+        return node.type;
+    }
+  };
+
+  const renderContent = () => {
+    const text = getTextContent();
+
+    switch (node.type) {
+      case 'Button':
+        return <span className="font-bold">{text}</span>;
       case 'List':
       case 'Select':
-      case 'Menu':
+      case 'Menu': {
         const items = (node.props.items as string[]) || [];
         return (
           <div>
@@ -250,12 +272,9 @@ function ComponentRenderer({ node, cellWidth, cellHeight, zoom, selectedIds }: C
             {items.length > 5 && <div className="text-muted-foreground">... +{items.length - 5} more</div>}
           </div>
         );
-      case 'Checkbox':
-        return <span>[{node.props.checked ? '✓' : ' '}] Checkbox</span>;
-      case 'Spinner':
-        return <span>⣾ Loading...</span>;
+      }
       default:
-        return <span className="text-muted-foreground text-xs">{node.type}</span>;
+        return <span>{text}</span>;
     }
   };
 
@@ -343,9 +362,13 @@ function ComponentRenderer({ node, cellWidth, cellHeight, zoom, selectedIds }: C
               {chars.h.repeat(Math.max(0, layout.width - 2))}
               {chars.tr}
             </div>
-            {/* Content */}
-            <div className="px-1">
-              {renderContent()}
+            {/* Content - pad with spaces to match border width */}
+            <div>
+              <span className={node.type === 'Button' ? 'font-bold' : ''}>
+                {chars.v}
+                {padText(getTextContent(), layout.width - 2, 'center')}
+                {chars.v}
+              </span>
             </div>
             {/* Bottom border */}
             <div>
