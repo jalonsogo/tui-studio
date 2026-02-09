@@ -4,6 +4,7 @@ import { Toolbar } from './components/editor/Toolbar';
 import { LeftSidebar } from './components/editor/LeftSidebar';
 import { Canvas } from './components/editor/Canvas';
 import { PropertyPanel } from './components/properties/PropertyPanel';
+import { LayoutDebugPanel } from './components/debug/LayoutDebugPanel';
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
       leftSidebar={<LeftSidebar />}
       canvas={<Canvas />}
       rightSidebar={<PropertyPanel />}
+      debugPanel={<LayoutDebugPanel />}
     />
   );
 }

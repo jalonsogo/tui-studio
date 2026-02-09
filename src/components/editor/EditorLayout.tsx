@@ -7,9 +7,10 @@ interface EditorLayoutProps {
   leftSidebar: ReactNode;
   canvas: ReactNode;
   rightSidebar: ReactNode;
+  debugPanel?: ReactNode;
 }
 
-export function EditorLayout({ toolbar, leftSidebar, canvas, rightSidebar }: EditorLayoutProps) {
+export function EditorLayout({ toolbar, leftSidebar, canvas, rightSidebar, debugPanel }: EditorLayoutProps) {
   return (
     <div className="flex flex-col h-screen w-screen bg-background text-foreground overflow-hidden">
       {/* Top Toolbar */}
@@ -24,9 +25,16 @@ export function EditorLayout({ toolbar, leftSidebar, canvas, rightSidebar }: Edi
           {leftSidebar}
         </div>
 
-        {/* Center - Canvas */}
+        {/* Center - Canvas + Debug Panel */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {canvas}
+          <div className="flex-1 overflow-hidden">
+            {canvas}
+          </div>
+          {debugPanel && (
+            <div className="h-48 flex-shrink-0 overflow-y-auto">
+              {debugPanel}
+            </div>
+          )}
         </div>
 
         {/* Right Sidebar - Properties */}
