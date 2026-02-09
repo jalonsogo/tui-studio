@@ -201,13 +201,11 @@ export const useComponentStore = create<ComponentState>((set, get) => ({
     const component = findNodeById(root, id);
     if (!component) return;
 
-    // Create new object to trigger re-render
-    Object.assign(component, {
-      props: { ...component.props, ...props },
-    });
+    // Mutate the component props
+    component.props = { ...component.props, ...props };
 
-    // Force new root reference
-    const newRoot = { ...root };
+    // Clone entire tree to ensure React detects changes
+    const newRoot = cloneNode(root);
     set({
       root: newRoot,
       components: flattenTree(newRoot),
@@ -224,13 +222,11 @@ export const useComponentStore = create<ComponentState>((set, get) => ({
     const component = findNodeById(root, id);
     if (!component) return;
 
-    // Create new object to trigger re-render
-    Object.assign(component, {
-      layout: { ...component.layout, ...layout },
-    });
+    // Mutate the component layout
+    component.layout = { ...component.layout, ...layout };
 
-    // Force new root reference
-    const newRoot = { ...root };
+    // Clone entire tree to ensure React detects changes
+    const newRoot = cloneNode(root);
     set({
       root: newRoot,
       components: flattenTree(newRoot),
@@ -247,13 +243,11 @@ export const useComponentStore = create<ComponentState>((set, get) => ({
     const component = findNodeById(root, id);
     if (!component) return;
 
-    // Create new object to trigger re-render
-    Object.assign(component, {
-      style: { ...component.style, ...style },
-    });
+    // Mutate the component style
+    component.style = { ...component.style, ...style };
 
-    // Force new root reference
-    const newRoot = { ...root };
+    // Clone entire tree to ensure React detects changes
+    const newRoot = cloneNode(root);
     set({
       root: newRoot,
       components: flattenTree(newRoot),
@@ -270,13 +264,11 @@ export const useComponentStore = create<ComponentState>((set, get) => ({
     const component = findNodeById(root, id);
     if (!component) return;
 
-    // Create new object to trigger re-render
-    Object.assign(component, {
-      events: { ...component.events, ...events },
-    });
+    // Mutate the component events
+    component.events = { ...component.events, ...events };
 
-    // Force new root reference
-    const newRoot = { ...root };
+    // Clone entire tree to ensure React detects changes
+    const newRoot = cloneNode(root);
     set({
       root: newRoot,
       components: flattenTree(newRoot),
