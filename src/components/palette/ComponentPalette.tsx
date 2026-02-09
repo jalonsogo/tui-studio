@@ -28,7 +28,7 @@ export function ComponentPalette() {
 
   const addComponent = (type: keyof typeof COMPONENT_LIBRARY) => {
     const def = COMPONENT_LIBRARY[type];
-    const parentId = componentStore.root?.id;
+    let parentId = componentStore.root?.id;
 
     if (!parentId) {
       // Create root if it doesn't exist
@@ -54,7 +54,7 @@ export function ComponentPalette() {
         collapsed: false,
       };
       componentStore.setRoot(root);
-      return;
+      parentId = 'root'; // Now we have a parent to add to
     }
 
     const newComponent: Omit<ComponentNode, 'id'> = {
@@ -70,7 +70,12 @@ export function ComponentPalette() {
       collapsed: false,
     };
 
-    componentStore.addComponent(parentId, newComponent);
+    const id = componentStore.addComponent(parentId, newComponent);
+
+    // Select the newly added component
+    if (id) {
+      useSelectionStore.getState().select(id);
+    }
   };
 
   return (

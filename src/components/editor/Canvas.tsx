@@ -42,7 +42,7 @@ export function Canvas() {
 
     if (dragData.type === 'new-component' && dragData.componentType) {
       // Add new component to canvas
-      const parentId = componentStore.root?.id || null;
+      let parentId = componentStore.root?.id;
 
       if (!parentId) {
         // Create root if it doesn't exist
@@ -68,7 +68,7 @@ export function Canvas() {
           collapsed: false,
         };
         componentStore.setRoot(root);
-        return;
+        parentId = 'root'; // Now we have a parent to add to
       }
 
       const def = COMPONENT_LIBRARY[dragData.componentType];
