@@ -130,17 +130,16 @@ export class LayoutEngine {
       if (child) {
         this.layouts.set(childId, layout);
 
-        // Recurse for nested children
-        if (child.children.length > 0) {
-          this.calculateNodeLayout(
-            child,
-            layout.x,
-            layout.y,
-            layout.width,
-            layout.height,
-            containerLayout || null
-          );
-        }
+        // ALWAYS recurse to calculate proper dimensions (including auto-width)
+        // even if the child has no children
+        this.calculateNodeLayout(
+          child,
+          layout.x,
+          layout.y,
+          layout.width,
+          layout.height,
+          containerLayout || null
+        );
       }
     });
   }
