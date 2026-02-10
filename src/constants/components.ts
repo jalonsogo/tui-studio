@@ -19,6 +19,28 @@ export interface ComponentDefinition {
 
 export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
   // Layout Components
+  Screen: {
+    type: 'Screen',
+    name: 'Screen',
+    description: 'Main container/screen',
+    icon: 'Square',
+    category: 'layout',
+    defaultProps: {
+      width: 'auto',
+      height: 'auto',
+    },
+    defaultLayout: {
+      type: 'flexbox',
+      direction: 'column',
+      padding: 1,
+    },
+    defaultStyle: {
+      border: true,
+      borderStyle: 'single',
+      borderColor: 'white',
+    },
+  },
+
   Box: {
     type: 'Box',
     name: 'Box',
@@ -33,6 +55,7 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
       type: 'flexbox',
       direction: 'column',
       padding: 1,
+      gap: 1,
     },
     defaultStyle: {
       border: true,
@@ -79,11 +102,14 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     description: 'Vertical or horizontal stack',
     icon: 'Layers',
     category: 'layout',
-    defaultProps: {},
+    defaultProps: {
+      width: 'auto',
+      height: 'auto',
+    },
     defaultLayout: {
       type: 'flexbox',
       direction: 'column',
-      gap: 0,
+      gap: 1,
     },
     defaultStyle: {},
   },
@@ -519,3 +545,21 @@ export const CATEGORIES: Array<{ id: ComponentDefinition['category']; name: stri
   { id: 'navigation', name: 'Navigation' },
   { id: 'overlay', name: 'Overlay' },
 ];
+
+// Helper to check if a component type can have children
+export function canHaveChildren(type: import('../types').ComponentType): boolean {
+  const containerTypes = [
+    'Screen',
+    'Box',
+    'Flexbox',
+    'Grid',
+    'Stack',
+    'Modal',
+    'Popover',
+    'Tabs',
+    'Menu',
+    'List',
+    'Tree',
+  ];
+  return containerTypes.includes(type);
+}

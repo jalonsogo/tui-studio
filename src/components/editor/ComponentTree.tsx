@@ -5,7 +5,7 @@ import { ChevronDown, ChevronRight, Eye, EyeOff, Lock, Unlock } from 'lucide-rea
 import { useComponentStore, useSelectionStore } from '../../stores';
 import type { ComponentNode } from '../../types';
 import { dragStore } from '../../hooks/useDragAndDrop';
-import { COMPONENT_LIBRARY } from '../../constants/components';
+import { COMPONENT_LIBRARY, canHaveChildren } from '../../constants/components';
 
 export function ComponentTree() {
   const componentStore = useComponentStore();
@@ -31,6 +31,8 @@ function TreeNode({ node, level }: { node: ComponentNode; level: number }) {
   const selectionStore = useSelectionStore();
   const [isDragOver, setIsDragOver] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [insertionIndex, setInsertionIndex] = useState<number | null>(null);
+  const [insertBefore, setInsertBefore] = useState(false);
 
   const isSelected = selectionStore.isSelected(node.id);
   const hasChildren = node.children.length > 0;
@@ -74,44 +76,102 @@ function TreeNode({ node, level }: { node: ComponentNode; level: number }) {
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsDragOver(true);
+
+    // Calculate if we should insert before or make child
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mouseY = e.clientY - rect.top;
+    const nodeHeight = rect.height;
+
+    // Top 25% = insert before this node (as sibling)
+    // Middle 50% = make child of this node (only if container)
+    // Bottom 25% = insert after this node (as sibling)
+
+    if (mouseY < nodeHeight * 0.25) {
+      setInsertBefore(true);
+      setIsDragOver(false);
+      setInsertionIndex(null);
+    } else if (mouseY > nodeHeight * 0.75) {
+      setInsertBefore(false);
+      setIsDragOver(false);
+      setInsertionIndex(-1); // Special value for "after"
+    } else {
+      // Middle zone - only show drop indicator if this is a container
+      if (canHaveChildren(node.type)) {
+        setInsertBefore(false);
+        setIsDragOver(true);
+        setInsertionIndex(null);
+      } else {
+        // Not a container - don't show drop indicator
+        setInsertBefore(false);
+        setIsDragOver(false);
+        setInsertionIndex(null);
+      }
+    }
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
     e.stopPropagation();
     setIsDragOver(false);
+    setInsertBefore(false);
+    setInsertionIndex(null);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(false);
+    setInsertBefore(false);
+    setInsertionIndex(null);
 
     const dragData = dragStore.dragData;
     if (!dragData) return;
+
+    // Get parent and calculate insertion index
+    const parent = componentStore.getParent(node.id);
 
     if (dragData.type === 'existing-component' && dragData.componentId) {
       // Don't drop on self or descendants
       if (dragData.componentId === node.id) return;
 
-      // Move component to be child of this node
-      componentStore.moveComponent(dragData.componentId, node.id);
+      if (insertBefore && parent) {
+        // Insert before this node (as sibling)
+        const index = parent.children.findIndex(c => c.id === node.id);
+        componentStore.moveComponent(dragData.componentId, parent.id, index);
+      } else if (insertionIndex === -1 && parent) {
+        // Insert after this node (as sibling)
+        const index = parent.children.findIndex(c => c.id === node.id);
+        componentStore.moveComponent(dragData.componentId, parent.id, index + 1);
+      } else if (canHaveChildren(node.type)) {
+        // Make child of this node (only if container)
+        componentStore.moveComponent(dragData.componentId, node.id);
+      }
     } else if (dragData.type === 'new-component' && dragData.componentType) {
-      // Add new component as child
       const def = COMPONENT_LIBRARY[dragData.componentType];
-      if (def) {
-        const newComponent: Omit<ComponentNode, 'id'> = {
-          type: def.type,
-          name: def.name,
-          props: { ...def.defaultProps },
-          layout: { ...def.defaultLayout },
-          style: { ...def.defaultStyle },
-          events: { ...def.defaultEvents },
-          children: [],
-          locked: false,
-          hidden: false,
-          collapsed: false,
-        };
+      if (!def) return;
+
+      const newComponent: Omit<ComponentNode, 'id'> = {
+        type: def.type,
+        name: def.name,
+        props: { ...def.defaultProps },
+        layout: { ...def.defaultLayout },
+        style: { ...def.defaultStyle },
+        events: { ...def.defaultEvents },
+        children: [],
+        locked: false,
+        hidden: false,
+        collapsed: false,
+      };
+
+      if (insertBefore && parent) {
+        // Insert before this node (as sibling)
+        const index = parent.children.findIndex(c => c.id === node.id);
+        componentStore.addComponent(parent.id, newComponent, index);
+      } else if (insertionIndex === -1 && parent) {
+        // Insert after this node (as sibling)
+        const index = parent.children.findIndex(c => c.id === node.id);
+        componentStore.addComponent(parent.id, newComponent, index + 1);
+      } else if (canHaveChildren(node.type)) {
+        // Add as child of this node (only if container)
         componentStore.addComponent(node.id, newComponent);
       }
     }
@@ -120,7 +180,23 @@ function TreeNode({ node, level }: { node: ComponentNode; level: number }) {
   };
 
   return (
-    <div>
+    <div className="relative">
+      {/* Insertion line - before */}
+      {insertBefore && (
+        <div
+          className="absolute left-0 right-0 h-0.5 bg-primary z-10"
+          style={{ top: '-1px', left: `${level * 12 + 8}px` }}
+        />
+      )}
+
+      {/* Insertion line - after */}
+      {insertionIndex === -1 && (
+        <div
+          className="absolute left-0 right-0 h-0.5 bg-primary z-10"
+          style={{ bottom: '-1px', left: `${level * 12 + 8}px` }}
+        />
+      )}
+
       {/* Node */}
       <div
         draggable={!node.locked}

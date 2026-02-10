@@ -125,20 +125,33 @@ export class LayoutEngine {
 
     // Store child layouts and recurse
     const containerLayout = this.layouts.get(container.id);
+    if (!containerLayout) return;
+
     childLayouts.forEach((layout, childId) => {
       const child = container.children.find(c => c.id === childId);
       if (child) {
-        this.layouts.set(childId, layout);
+        // CRITICAL FIX: Child layout positions are relative to container
+        // Convert to absolute positions by adding container's position
+        const absoluteX = containerLayout.x + layout.x;
+        const absoluteY = containerLayout.y + layout.y;
+
+        // Store the layout with absolute coordinates
+        const absoluteLayout = {
+          ...layout,
+          x: absoluteX,
+          y: absoluteY,
+        };
+        this.layouts.set(childId, absoluteLayout);
 
         // ALWAYS recurse to calculate proper dimensions (including auto-width)
         // even if the child has no children
         this.calculateNodeLayout(
           child,
-          layout.x,
-          layout.y,
+          absoluteX,
+          absoluteY,
           layout.width,
           layout.height,
-          containerLayout || null
+          containerLayout
         );
       }
     });
@@ -186,8 +199,53 @@ export class LayoutEngine {
   }
 
   private calculateAutoWidth(node: ComponentNode): number {
-    // Simple auto width calculation
-    // In a real implementation, this would measure content
+    // For containers (Stack, Box, Screen, etc.), calculate based on children
+    if (node.children.length > 0 && ['flexbox', 'grid', 'absolute'].includes(node.layout.type)) {
+      const padding = typeof node.layout.padding === 'number' ? node.layout.padding : 0;
+      const gap = typeof node.layout.gap === 'number' ? node.layout.gap : 0;
+      const border = node.style.border ? 2 : 0; // +2 for left and right border
+
+      // For horizontal layouts (row direction), sum children widths + gaps
+      if (node.layout.type === 'flexbox' && node.layout.direction === 'row') {
+        let totalWidth = padding * 2; // left + right padding
+
+        node.children.forEach((child, index) => {
+          // Get child width (recursive for auto-sized children)
+          const childWidth = typeof child.props.width === 'number'
+            ? child.props.width
+            : this.calculateAutoWidth(child);
+
+          totalWidth += childWidth;
+
+          // Add gap between children (not after last child)
+          if (index < node.children.length - 1) {
+            totalWidth += gap;
+          }
+        });
+
+        return totalWidth + border;
+      }
+
+      // For column direction, use the widest child
+      if (node.layout.type === 'flexbox' && node.layout.direction === 'column') {
+        let maxWidth = 0;
+
+        node.children.forEach(child => {
+          const childWidth = typeof child.props.width === 'number'
+            ? child.props.width
+            : this.calculateAutoWidth(child);
+
+          maxWidth = Math.max(maxWidth, childWidth);
+        });
+
+        return maxWidth + (padding * 2) + border;
+      }
+
+      // For other layouts, use a reasonable default
+      return 20 + border;
+    }
+
+    // Simple auto width calculation for leaf components
     switch (node.type) {
       case 'Button': {
         const label = (node.props.label as string) || 'Button';
@@ -229,7 +287,38 @@ export class LayoutEngine {
   }
 
   private calculateAutoHeight(node: ComponentNode): number {
-    // Simple auto height calculation
+    // For containers (Stack, Box, Screen, etc.), calculate based on children
+    if (node.children.length > 0 && ['flexbox', 'grid', 'absolute'].includes(node.layout.type)) {
+      const padding = typeof node.layout.padding === 'number' ? node.layout.padding : 0;
+      const gap = typeof node.layout.gap === 'number' ? node.layout.gap : 0;
+      const border = node.style.border ? 2 : 0; // +2 for top and bottom border
+
+      // For vertical layouts (column direction), sum children heights + gaps
+      if (node.layout.type === 'flexbox' && node.layout.direction === 'column') {
+        let totalHeight = padding * 2; // top + bottom padding
+
+        node.children.forEach((child, index) => {
+          // Get child height (recursive for auto-sized children)
+          const childHeight = typeof child.props.height === 'number'
+            ? child.props.height
+            : this.calculateAutoHeight(child);
+
+          totalHeight += childHeight;
+
+          // Add gap between children (not after last child)
+          if (index < node.children.length - 1) {
+            totalHeight += gap;
+          }
+        });
+
+        return totalHeight + border;
+      }
+
+      // For other layouts, use a reasonable default
+      return 10 + border;
+    }
+
+    // Simple auto height calculation for leaf components
     switch (node.type) {
       case 'Button':
       case 'TextInput':

@@ -144,22 +144,33 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
         />
       </div>
 
-      {/* Dimensions */}
-      <DimensionInput
-        label="Width"
-        value={component.props.width}
-        onChange={(value) =>
-          componentStore.updateProps(component.id, { width: value })
-        }
-      />
+      {/* Dimensions - Special handling for Screen */}
+      {component.type === 'Screen' ? (
+        <ScreenSizeInput
+          component={component}
+          onChange={(width, height) =>
+            componentStore.updateProps(component.id, { width, height })
+          }
+        />
+      ) : (
+        <>
+          <DimensionInput
+            label="Width"
+            value={component.props.width}
+            onChange={(value) =>
+              componentStore.updateProps(component.id, { width: value })
+            }
+          />
 
-      <DimensionInput
-        label="Height"
-        value={component.props.height}
-        onChange={(value) =>
-          componentStore.updateProps(component.id, { height: value })
-        }
-      />
+          <DimensionInput
+            label="Height"
+            value={component.props.height}
+            onChange={(value) =>
+              componentStore.updateProps(component.id, { height: value })
+            }
+          />
+        </>
+      )}
 
       {/* Type-specific Props */}
       <div className="pt-4 border-t border-border">
@@ -425,6 +436,81 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// Screen Size Input with presets
+function ScreenSizeInput({
+  component,
+  onChange,
+}: {
+  component: import('../../types').ComponentNode;
+  onChange: (width: number | 'fill', height: number | 'fill') => void;
+}) {
+  const [preset, setPreset] = useState<'default' | 'fullscreen' | 'custom'>('default');
+
+  const currentWidth = component.props.width as number | 'fill';
+  const currentHeight = component.props.height as number | 'fill';
+
+  const handlePresetChange = (newPreset: 'default' | 'fullscreen' | 'custom') => {
+    setPreset(newPreset);
+
+    if (newPreset === 'default') {
+      onChange(80, 25);
+    } else if (newPreset === 'fullscreen') {
+      onChange('fill', 'fill');
+    }
+    // For 'custom', keep current values
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className="text-sm font-medium mb-2 block">Screen Size</label>
+        <select
+          value={preset}
+          onChange={(e) => handlePresetChange(e.target.value as any)}
+          className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm"
+        >
+          <option value="default">Default (80×25)</option>
+          <option value="fullscreen">Full Screen (Fill)</option>
+          <option value="custom">Custom</option>
+        </select>
+      </div>
+
+      {preset === 'custom' && (
+        <div className="space-y-3 pl-4 border-l-2 border-border">
+          <div>
+            <label className="text-sm font-medium mb-2 block">Columns (Width)</label>
+            <input
+              type="number"
+              value={typeof currentWidth === 'number' ? currentWidth : 80}
+              onChange={(e) => {
+                const val = parseInt(e.target.value) || 80;
+                onChange(val, currentHeight);
+              }}
+              min={20}
+              max={300}
+              className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-2 block">Rows (Height)</label>
+            <input
+              type="number"
+              value={typeof currentHeight === 'number' ? currentHeight : 25}
+              onChange={(e) => {
+                const val = parseInt(e.target.value) || 25;
+                onChange(currentWidth, val);
+              }}
+              min={10}
+              max={100}
+              className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -16,6 +16,31 @@ export function LayoutEditor({ component }: LayoutEditorProps) {
 
   return (
     <div className="space-y-4">
+      {/* Position (X, Y) - Always visible for absolute positioning */}
+      <div>
+        <label className="text-sm font-medium mb-2 block">Position</label>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">X (columns)</label>
+            <input
+              type="number"
+              value={component.layout.x || 0}
+              onChange={(e) => handleUpdate({ x: parseInt(e.target.value) || 0 })}
+              className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">Y (rows)</label>
+            <input
+              type="number"
+              value={component.layout.y || 0}
+              onChange={(e) => handleUpdate({ y: parseInt(e.target.value) || 0 })}
+              className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm"
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Layout Type */}
       <div>
         <label className="text-sm font-medium mb-2 block">Layout Type</label>
@@ -149,29 +174,6 @@ export function LayoutEditor({ component }: LayoutEditorProps) {
         </>
       )}
 
-      {/* Absolute Options */}
-      {component.layout.type === 'absolute' && (
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="text-sm font-medium mb-2 block">X Position</label>
-            <input
-              type="number"
-              value={component.layout.x || 0}
-              onChange={(e) => handleUpdate({ x: parseInt(e.target.value) || 0 })}
-              className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-2 block">Y Position</label>
-            <input
-              type="number"
-              value={component.layout.y || 0}
-              onChange={(e) => handleUpdate({ y: parseInt(e.target.value) || 0 })}
-              className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm"
-            />
-          </div>
-        </div>
-      )}
 
       {/* Padding */}
       <div>

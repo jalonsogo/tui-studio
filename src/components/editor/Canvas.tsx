@@ -1,42 +1,85 @@
 // Main canvas for displaying the TUI design
 
-import { useEffect, useLayoutEffect, useState } from 'react';
-import { useCanvasStore, useComponentStore, useSelectionStore } from '../../stores';
+import { useEffect, useState } from 'react';
+import { useCanvasStore, useComponentStore, useSelectionStore, useThemeStore } from '../../stores';
 import { layoutEngine } from '../../utils/layout';
 import { dragStore } from '../../hooks/useDragAndDrop';
-import { COMPONENT_LIBRARY } from '../../constants/components';
+import { COMPONENT_LIBRARY, canHaveChildren } from '../../constants/components';
 
 export function Canvas() {
   console.log('🎨 Canvas component mounted/rendering');
 
-  // Use Zustand selectors for proper reactivity
-  const root = useComponentStore(state => state.root);
+  // Subscribe to ENTIRE store to avoid stale state
+  const componentStore = useComponentStore();
+  const canvasStore = useCanvasStore();
+  const selectionStore = useSelectionStore();
+
+  const { root } = componentStore;
   console.log('📦 Current root:', root ? `ID: ${root.id}, Children: ${root.children.length}` : 'null');
 
-  const addComponent = useComponentStore(state => state.addComponent);
-  const setRoot = useComponentStore(state => state.setRoot);
-
-  const canvasWidth = useCanvasStore(state => state.width);
-  const canvasHeight = useCanvasStore(state => state.height);
-  const canvasZoom = useCanvasStore(state => state.zoom);
-  const showGrid = useCanvasStore(state => state.showGrid);
-
-  const select = useSelectionStore(state => state.select);
   const [isDragOver, setIsDragOver] = useState(false);
+
+  // Keyboard navigation for selected components
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const selectedIds = Array.from(selectionStore.selectedIds);
+      if (selectedIds.length === 0) return;
+
+      // Only handle arrow keys
+      if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+
+      // Don't interfere with input fields
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      e.preventDefault();
+
+      // Shift key = move 5 units, otherwise 1 unit
+      const step = e.shiftKey ? 5 : 1;
+
+      selectedIds.forEach(id => {
+        const component = componentStore.getComponent(id);
+        if (!component || component.locked) return;
+
+        const currentX = component.layout.x || 0;
+        const currentY = component.layout.y || 0;
+
+        let newX = currentX;
+        let newY = currentY;
+
+        switch (e.key) {
+          case 'ArrowUp':
+            newY = Math.max(0, currentY - step);
+            break;
+          case 'ArrowDown':
+            newY = currentY + step;
+            break;
+          case 'ArrowLeft':
+            newX = Math.max(0, currentX - step);
+            break;
+          case 'ArrowRight':
+            newX = currentX + step;
+            break;
+        }
+
+        componentStore.updateLayout(id, { x: newX, y: newY });
+      });
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [componentStore, selectionStore]);
 
   const cellWidth = 8; // pixels per character
   const cellHeight = 16; // pixels per line
 
-  const viewportWidth = canvasWidth * cellWidth * canvasZoom;
-  const viewportHeight = canvasHeight * cellHeight * canvasZoom;
+  const viewportWidth = canvasStore.width * cellWidth * canvasStore.zoom;
+  const viewportHeight = canvasStore.height * cellHeight * canvasStore.zoom;
 
-  // Calculate layout SYNCHRONOUSLY before paint to avoid flicker
-  // useLayoutEffect runs before browser paint, ensuring layout is ready when rendering
-  useLayoutEffect(() => {
-    console.log('⚡ Calculating layout for root:', root ? `${root.id} with ${root.children.length} children` : 'null');
-    layoutEngine.calculateLayout(root, canvasWidth, canvasHeight);
-    console.log('✅ Layout calculation complete');
-  }, [root, canvasWidth, canvasHeight]);
+  // Calculate layout SYNCHRONOUSLY during render so ComponentRenderer has layout data
+  // This must happen BEFORE ComponentRenderer tries to access layout
+  console.log('⚡ Calculating layout for root:', root ? `${root.id} with ${root.children.length} children` : 'null');
+  layoutEngine.calculateLayout(root, canvasStore.width, canvasStore.height);
+  console.log('✅ Layout calculation complete');
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -55,6 +98,30 @@ export function Canvas() {
     const dragData = dragStore.dragData;
     if (!dragData) return;
 
+    // Handle repositioning existing components
+    if (dragData.type === 'existing-component' && dragData.componentId) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      // Convert pixel position to character coordinates
+      const charX = Math.floor(mouseX / (cellWidth * canvasStore.zoom));
+      const charY = Math.floor(mouseY / (cellHeight * canvasStore.zoom));
+
+      console.log('📍 Repositioning component:', {
+        componentId: dragData.componentId,
+        mouseX,
+        mouseY,
+        charX,
+        charY
+      });
+
+      // Update component position
+      componentStore.updateLayout(dragData.componentId, { x: charX, y: charY });
+      dragStore.endDrag();
+      return;
+    }
+
     if (dragData.type === 'new-component' && dragData.componentType) {
       // Add new component to canvas
       let parentId = root?.id;
@@ -63,18 +130,14 @@ export function Canvas() {
         // Create root if it doesn't exist
         const newRoot: import('../../types').ComponentNode = {
           id: 'root',
-          type: 'Box',
-          name: 'Root',
+          type: 'Screen',
+          name: 'Main Screen',
           props: { width: 80, height: 24 },
           layout: {
-            type: 'flexbox',
-            direction: 'column',
-            gap: 1,
-            padding: 2,
+            type: 'absolute',
           },
           style: {
-            border: true,
-            borderStyle: 'single',
+            border: false,
           },
           events: {},
           children: [],
@@ -82,17 +145,26 @@ export function Canvas() {
           hidden: false,
           collapsed: false,
         };
-        setRoot(newRoot);
+        componentStore.setRoot(newRoot);
         parentId = 'root'; // Now we have a parent to add to
       }
 
       const def = COMPONENT_LIBRARY[dragData.componentType];
       if (def) {
+        // Calculate position with offset so components don't stack on top of each other
+        const existingChildren = root?.children.length || 0;
+        const offsetX = existingChildren * 2;
+        const offsetY = existingChildren * 2;
+
         const newComponent: Omit<import('../../types').ComponentNode, 'id'> = {
           type: def.type,
           name: def.name,
           props: { ...def.defaultProps },
-          layout: { ...def.defaultLayout },
+          layout: {
+            ...def.defaultLayout,
+            x: offsetX,
+            y: offsetY,
+          },
           style: { ...def.defaultStyle },
           events: { ...def.defaultEvents },
           children: [],
@@ -101,9 +173,9 @@ export function Canvas() {
           collapsed: false,
         };
 
-        const id = addComponent(parentId, newComponent);
+        const id = componentStore.addComponent(parentId, newComponent);
         if (id) {
-          select(id);
+          selectionStore.select(id);
         }
       }
     }
@@ -121,14 +193,14 @@ export function Canvas() {
           }`}
           style={{
             fontFamily: 'monospace',
-            fontSize: `${12 * canvasZoom}px`,
+            fontSize: `${12 * canvasStore.zoom}px`,
           }}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
           {/* Grid */}
-          {showGrid && (
+          {canvasStore.showGrid && (
             <svg
               className="absolute inset-0 pointer-events-none opacity-20"
               width="100%"
@@ -137,13 +209,13 @@ export function Canvas() {
               <defs>
                 <pattern
                   id="grid"
-                  width={cellWidth * canvasZoom}
-                  height={cellHeight * canvasZoom}
+                  width={cellWidth * canvasStore.zoom}
+                  height={cellHeight * canvasStore.zoom}
                   patternUnits="userSpaceOnUse"
                 >
                   <rect
-                    width={cellWidth * canvasZoom}
-                    height={cellHeight * canvasZoom}
+                    width={cellWidth * canvasStore.zoom}
+                    height={cellHeight * canvasStore.zoom}
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="0.5"
@@ -171,7 +243,7 @@ export function Canvas() {
                 node={root}
                 cellWidth={cellWidth}
                 cellHeight={cellHeight}
-                zoom={canvasZoom}
+                zoom={canvasStore.zoom}
               />
             </div>
           )}
@@ -179,7 +251,7 @@ export function Canvas() {
 
         {/* Canvas Info */}
         <div className="absolute -bottom-6 left-0 text-xs text-muted-foreground">
-          {canvasWidth}×{canvasHeight} cols/rows
+          {canvasStore.width}×{canvasStore.height} cols/rows
         </div>
       </div>
     </div>
@@ -195,14 +267,26 @@ interface ComponentRendererProps {
 }
 
 function ComponentRenderer({ node, cellWidth, cellHeight, zoom }: ComponentRendererProps) {
-  // Use Zustand selectors for proper reactivity
-  const selectedIds = useSelectionStore(state => state.selectedIds);
-  const select = useSelectionStore(state => state.select);
-  const moveComponent = useComponentStore(state => state.moveComponent);
+  // Subscribe to entire store to avoid stale state
+  const selectionStore = useSelectionStore();
+  const componentStore = useComponentStore();
+  const themeStore = useThemeStore();
+
+  const selectedIds = selectionStore.selectedIds;
+  const isSelected = selectedIds.has(node.id);
+
+  // Helper to convert ANSI color name to hex
+  const getColor = (color?: string): string | undefined => {
+    if (!color) return undefined;
+    // If it's already a hex color, return it
+    if (color.startsWith('#')) return color;
+    // Otherwise, look it up in ANSI colors
+    return themeStore.ansiColors[color as keyof typeof themeStore.ansiColors] || color;
+  };
 
   const layout = layoutEngine.getLayout(node.id);
-  const isSelected = selectedIds.has(node.id);
   const [isDragging, setIsDragging] = useState(false);
+  const [insertionIndex, setInsertionIndex] = useState<number | null>(null);
 
   if (!layout || node.hidden) return null;
 
@@ -298,20 +382,42 @@ function ComponentRenderer({ node, cellWidth, cellHeight, zoom }: ComponentRende
   const borderStyle = node.style.borderStyle || 'single';
   const chars = getBorderChars(borderStyle);
 
+  const x = layout.x * cellWidth * zoom;
+  const y = layout.y * cellHeight * zoom;
+
   // Debug logging
   if (node.type === 'Button') {
     console.log(`[Canvas] Rendering Button:`, {
       name: node.name,
-      propsWidth: node.props.width,
+      nodeId: node.id,
+      layoutX: layout.x,
+      layoutY: layout.y,
+      pixelX: x,
+      pixelY: y,
       layoutWidth: layout.width,
       layoutHeight: layout.height,
+      cellWidth,
+      cellHeight,
+      zoom,
       hasBorder,
-      horizontalChars: layout.width - 2
+      isSelected,
+      hidden: node.hidden,
     });
   }
 
-  const x = layout.x * cellWidth * zoom;
-  const y = layout.y * cellHeight * zoom;
+  // Debug logging for root
+  if (node.type === 'Box' && node.id === 'root') {
+    console.log(`[Canvas] Rendering Root:`, {
+      nodeId: node.id,
+      layoutX: layout.x,
+      layoutY: layout.y,
+      pixelX: x,
+      pixelY: y,
+      layoutWidth: layout.width,
+      layoutHeight: layout.height,
+      childrenCount: node.children.length,
+    });
+  }
 
   const handleDragStart = (e: React.DragEvent) => {
     e.stopPropagation();
@@ -324,7 +430,7 @@ function ComponentRenderer({ node, cellWidth, cellHeight, zoom }: ComponentRende
     e.dataTransfer.setData('text/plain', node.id);
 
     // Select the component being dragged
-    select(node.id);
+    selectionStore.select(node.id);
   };
 
   const handleDragEnd = () => {
@@ -334,31 +440,116 @@ function ComponentRenderer({ node, cellWidth, cellHeight, zoom }: ComponentRende
 
   const handleDragOver = (e: React.DragEvent) => {
     e.stopPropagation();
+
+    // Only containers can accept children
+    if (!canHaveChildren(node.type)) {
+      e.dataTransfer.dropEffect = 'none';
+      return;
+    }
+
     e.preventDefault();
+
+    // Calculate insertion position for flexbox/stack containers
+    if (node.children.length > 0 && node.layout.type === 'flexbox') {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      const isColumn = node.layout.direction === 'column';
+      const mousePos = isColumn ? mouseY : mouseX;
+
+      // Find insertion index based on mouse position
+      let insertIndex = 0;
+      for (let i = 0; i < node.children.length; i++) {
+        const childLayout = layoutEngine.getLayout(node.children[i].id);
+        if (!childLayout) continue;
+
+        const childPos = isColumn
+          ? (childLayout.y - layout.y) * cellHeight * zoom
+          : (childLayout.x - layout.x) * cellWidth * zoom;
+        const childSize = isColumn
+          ? childLayout.height * cellHeight * zoom
+          : childLayout.width * cellWidth * zoom;
+
+        if (mousePos < childPos + childSize / 2) {
+          insertIndex = i;
+          break;
+        }
+        insertIndex = i + 1;
+      }
+
+      setInsertionIndex(insertIndex);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setInsertionIndex(null);
   };
 
   const handleDrop = (e: React.DragEvent) => {
+    // Root Screen should not intercept drops - let canvas handle repositioning
+    if (node.id === 'root') {
+      return;
+    }
+
+    // Only containers can accept children
+    if (!canHaveChildren(node.type)) {
+      return;
+    }
+
     e.stopPropagation();
     e.preventDefault();
 
     const dragData = dragStore.dragData;
-    if (!dragData || dragData.type !== 'existing-component' || !dragData.componentId) return;
+    if (!dragData) return;
 
-    // Don't drop on self
-    if (dragData.componentId === node.id) return;
+    // Handle new component from palette
+    if (dragData.type === 'new-component' && dragData.componentType) {
+      const def = COMPONENT_LIBRARY[dragData.componentType];
+      if (def) {
+        const newComponent: Omit<import('../../types').ComponentNode, 'id'> = {
+          type: def.type,
+          name: def.name,
+          props: { ...def.defaultProps },
+          layout: { ...def.defaultLayout, x: 0, y: 0 },
+          style: { ...def.defaultStyle },
+          events: { ...def.defaultEvents },
+          children: [],
+          locked: false,
+          hidden: false,
+          collapsed: false,
+        };
 
-    // Move the dragged component to be a child of this component
-    moveComponent(dragData.componentId, node.id);
-    dragStore.endDrag();
+        const id = componentStore.addComponent(node.id, newComponent, insertionIndex ?? undefined);
+        if (id) {
+          selectionStore.select(id);
+        }
+      }
+      setInsertionIndex(null);
+      dragStore.endDrag();
+      return;
+    }
+
+    // Handle existing component reparenting
+    if (dragData.type === 'existing-component' && dragData.componentId) {
+      // Don't drop on self
+      if (dragData.componentId === node.id) return;
+
+      // Move the dragged component to be a child of this component (reparenting)
+      componentStore.moveComponent(dragData.componentId, node.id, insertionIndex ?? undefined);
+      setInsertionIndex(null);
+      dragStore.endDrag();
+    }
   };
 
   return (
     <>
       <div
-        draggable={!node.locked && node.type !== 'Box'}
+        draggable={!node.locked && node.id !== 'root'}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={`absolute transition-colors ${
           isDragging ? 'opacity-50 cursor-grabbing' : 'cursor-grab'
@@ -368,8 +559,8 @@ function ComponentRenderer({ node, cellWidth, cellHeight, zoom }: ComponentRende
         style={{
           left: `${x}px`,
           top: `${y}px`,
-          color: node.style.color,
-          backgroundColor: node.style.backgroundColor,
+          color: getColor(node.style.color),
+          backgroundColor: getColor(node.style.backgroundColor),
           fontWeight: node.style.bold ? 'bold' : 'normal',
           fontStyle: node.style.italic ? 'italic' : 'normal',
           textDecoration: node.style.underline ? 'underline' : 'none',
@@ -379,7 +570,7 @@ function ComponentRenderer({ node, cellWidth, cellHeight, zoom }: ComponentRende
         }}
         onClick={(e) => {
           e.stopPropagation();
-          select(node.id);
+          selectionStore.select(node.id);
         }}
       >
         {hasBorder ? (
@@ -409,16 +600,67 @@ function ComponentRenderer({ node, cellWidth, cellHeight, zoom }: ComponentRende
           renderContent()
         )}
 
-        {/* Layout debug info */}
-        {isSelected && (
+        {/* Component label - only when selected, shows name + dimensions + position */}
+        {isSelected && node.id !== 'root' && (
           <div
-            className="absolute -top-6 left-0 text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded whitespace-nowrap"
+            className="absolute -top-5 left-0 text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded whitespace-nowrap"
             style={{ fontSize: '10px' }}
           >
-            {layout.width}×{layout.height} @ ({layout.x}, {layout.y})
+            {node.name} · {layout.width}×{layout.height} @ ({layout.x}, {layout.y})
           </div>
         )}
       </div>
+
+      {/* Insertion line indicator */}
+      {insertionIndex !== null && node.layout.type === 'flexbox' && (
+        (() => {
+          const isColumn = node.layout.direction === 'column';
+          const padding = typeof node.layout.padding === 'number' ? node.layout.padding : 0;
+
+          let lineX = x;
+          let lineY = y;
+          let lineWidth = layout.width * cellWidth * zoom;
+          let lineHeight = 2;
+
+          if (insertionIndex === 0) {
+            // Insert at beginning (after padding)
+            lineX = x + (isColumn ? 0 : padding * cellWidth * zoom);
+            lineY = y + (isColumn ? padding * cellHeight * zoom : 0);
+            if (!isColumn) {
+              lineWidth = 2;
+              lineHeight = layout.height * cellHeight * zoom;
+            }
+          } else if (insertionIndex <= node.children.length) {
+            // Insert between/after children
+            const prevChild = node.children[insertionIndex - 1];
+            const prevLayout = layoutEngine.getLayout(prevChild?.id);
+            if (prevLayout) {
+              const gap = typeof node.layout.gap === 'number' ? node.layout.gap : 0;
+              if (isColumn) {
+                lineY = (prevLayout.y + prevLayout.height + gap / 2) * cellHeight * zoom;
+              } else {
+                lineX = (prevLayout.x + prevLayout.width + gap / 2) * cellWidth * zoom;
+                lineWidth = 2;
+                lineHeight = layout.height * cellHeight * zoom;
+              }
+            }
+          }
+
+          return (
+            <div
+              className="absolute pointer-events-none"
+              style={{
+                left: `${lineX}px`,
+                top: `${lineY}px`,
+                width: `${lineWidth}px`,
+                height: `${lineHeight}px`,
+                backgroundColor: '#3b82f6',
+                zIndex: 1000,
+              }}
+            />
+          );
+        })()
+      )}
 
       {/* Render children */}
       {node.children.map((child) => (

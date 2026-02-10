@@ -2,6 +2,7 @@
 
 export type ComponentType =
   // Layout
+  | 'Screen'
   | 'Box'
   | 'Flexbox'
   | 'Grid'
