@@ -1,13 +1,15 @@
 // Top toolbar with controls
 
 import { useState } from 'react';
-import { Undo2, Redo2, ZoomIn, ZoomOut, Grid3x3, Save, Download } from 'lucide-react';
-import { useComponentStore, useCanvasStore } from '../../stores';
+import { Undo2, Redo2, ZoomIn, ZoomOut, Grid3x3, Save, Download, Palette } from 'lucide-react';
+import { useComponentStore, useCanvasStore, useThemeStore } from '../../stores';
 import { ExportModal } from '../export/ExportModal';
+import { THEME_NAMES } from '../../stores/themeStore';
 
 export function Toolbar() {
   const componentStore = useComponentStore();
   const canvasStore = useCanvasStore();
+  const themeStore = useThemeStore();
   const [exportOpen, setExportOpen] = useState(false);
 
   const canUndo = componentStore.historyIndex > 0;
@@ -18,7 +20,7 @@ export function Toolbar() {
       <div className="h-14 px-4 flex items-center justify-between bg-card">
         {/* Left - Logo/Title */}
         <div className="flex items-center gap-4">
-          <h1 className="text-lg font-bold">TUI Designer</h1>
+          <h1 className="text-lg font-bold">Gliph</h1>
           <div className="text-sm text-muted-foreground">
             Terminal UI Design Tool
           </div>
@@ -77,7 +79,7 @@ export function Toolbar() {
         </div>
 
         {/* Grid */}
-        <div className="flex items-center gap-1 px-2">
+        <div className="flex items-center gap-1 px-2 border-r border-border">
           <button
             onClick={() => canvasStore.toggleGrid()}
             className={`p-2 hover:bg-accent rounded ${
@@ -87,6 +89,23 @@ export function Toolbar() {
           >
             <Grid3x3 className="w-4 h-4" />
           </button>
+        </div>
+
+        {/* Theme Selector */}
+        <div className="flex items-center gap-2 px-2">
+          <Palette className="w-4 h-4 text-muted-foreground" />
+          <select
+            value={themeStore.currentTheme}
+            onChange={(e) => themeStore.setTheme(e.target.value as any)}
+            className="px-2 py-1 text-xs bg-secondary border border-border rounded hover:bg-secondary/80 cursor-pointer"
+            title="Color Theme"
+          >
+            {THEME_NAMES.map((theme) => (
+              <option key={theme.value} value={theme.value}>
+                {theme.label}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 

@@ -1,11 +1,12 @@
 // Enhanced property panel with tabs
 
 import { useState } from 'react';
-import { Settings, Layout, Palette, Zap } from 'lucide-react';
+import { Settings, Layout, Palette, Zap, Trash2 } from 'lucide-react';
 import { useSelectionStore, useComponentStore } from '../../stores';
 import { DimensionInput } from './DimensionInput';
 import { LayoutEditor } from './LayoutEditor';
 import { StyleEditor } from './StyleEditor';
+import { THEME_NAMES } from '../../stores/themeStore';
 
 type Tab = 'properties' | 'layout' | 'style' | 'events';
 
@@ -19,11 +20,11 @@ export function PropertyPanel() {
 
   if (!selectedComponent) {
     return (
-      <div className="p-4">
-        <h2 className="text-sm font-semibold mb-4 text-muted-foreground uppercase">
+      <div className="p-3">
+        <h2 className="text-xs font-semibold mb-3 text-muted-foreground uppercase">
           Properties
         </h2>
-        <div className="text-center text-sm text-muted-foreground py-8">
+        <div className="text-center text-xs text-muted-foreground py-6">
           Select a component to edit its properties
         </div>
       </div>
@@ -33,11 +34,11 @@ export function PropertyPanel() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="p-4 border-b border-border">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase mb-1">
+      <div className="p-3 border-b border-border">
+        <h2 className="text-xs font-semibold text-muted-foreground uppercase mb-0.5">
           Properties
         </h2>
-        <div className="text-xs text-muted-foreground">
+        <div className="text-[10px] text-muted-foreground">
           {selectedComponent.type}
         </div>
       </div>
@@ -91,7 +92,7 @@ export function PropertyPanel() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-3">
         {activeTab === 'properties' && <PropertiesTab component={selectedComponent} />}
         {activeTab === 'layout' && <LayoutEditor component={selectedComponent} />}
         {activeTab === 'style' && <StyleEditor component={selectedComponent} />}
@@ -99,13 +100,13 @@ export function PropertyPanel() {
       </div>
 
       {/* Actions */}
-      <div className="p-4 border-t border-border space-y-2">
+      <div className="p-3 border-t border-border space-y-1.5">
         <button
           onClick={() => {
             const id = componentStore.duplicateComponent(selectedComponent.id);
             if (id) selectionStore.select(id);
           }}
-          className="w-full px-3 py-2 bg-secondary hover:bg-secondary/80 rounded text-sm font-medium"
+          className="w-full px-2 py-1.5 bg-secondary hover:bg-secondary/80 rounded text-xs font-medium"
         >
           Duplicate Component
         </button>
@@ -114,7 +115,7 @@ export function PropertyPanel() {
             componentStore.removeComponent(selectedComponent.id);
             selectionStore.clearSelection();
           }}
-          className="w-full px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-medium"
+          className="w-full px-2 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-medium"
         >
           Delete Component
         </button>
@@ -128,10 +129,10 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
   const componentStore = useComponentStore();
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Component Name */}
       <div>
-        <label className="text-sm font-medium mb-2 block">Component Name</label>
+        <label className="text-xs font-medium mb-1.5 block">Component Name</label>
         <input
           type="text"
           value={component.name}
@@ -140,9 +141,32 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
               name: e.target.value,
             })
           }
-          className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm"
+          className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs"
         />
       </div>
+
+      {/* Theme Selector - Only for Screen */}
+      {component.type === 'Screen' && (
+        <div>
+          <label className="text-xs font-medium mb-1.5 block">Color Theme</label>
+          <select
+            value={(component.props.theme as string) || 'dracula'}
+            onChange={(e) =>
+              componentStore.updateProps(component.id, { theme: e.target.value })
+            }
+            className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs"
+          >
+            {THEME_NAMES.map((theme) => (
+              <option key={theme.value} value={theme.value}>
+                {theme.label}
+              </option>
+            ))}
+          </select>
+          <div className="text-[10px] text-muted-foreground mt-1">
+            Affects all ANSI colors within this screen
+          </div>
+        </div>
+      )}
 
       {/* Dimensions - Special handling for Screen */}
       {component.type === 'Screen' ? (
@@ -174,11 +198,11 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
 
       {/* Type-specific Props */}
       <div className="pt-4 border-t border-border">
-        <h3 className="text-sm font-semibold mb-3">Component-Specific</h3>
+        <h3 className="text-xs font-semibold mb-2">Component-Specific</h3>
         <div className="space-y-3">
           {component.type === 'Text' && (
             <div>
-              <label className="text-sm font-medium mb-2 block">Content</label>
+              <label className="text-xs font-medium mb-1.5 block">Content</label>
               <textarea
                 value={(component.props.content as string) || ''}
                 onChange={(e) =>
@@ -187,7 +211,7 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
                   })
                 }
                 rows={3}
-                className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm resize-none"
+                className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs resize-none"
               />
             </div>
           )}
@@ -195,7 +219,7 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
           {component.type === 'Button' && (
             <>
               <div>
-                <label className="text-sm font-medium mb-2 block">Label</label>
+                <label className="text-xs font-medium mb-1.5 block">Label</label>
                 <input
                   type="text"
                   value={(component.props.label as string) || ''}
@@ -204,7 +228,7 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
                       label: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm"
+                  className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs"
                 />
               </div>
 
@@ -222,7 +246,7 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
                         })
                       }
                     />
-                    <label htmlFor="iconLeftEnabled" className="text-sm font-medium">
+                    <label htmlFor="iconLeftEnabled" className="text-xs font-medium">
                       Icon Left
                     </label>
                   </div>
@@ -237,14 +261,14 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
                     }
                     placeholder="+ or ^A or 🔥"
                     disabled={!(component.props.iconLeftEnabled as boolean)}
-                    className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm font-mono disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs font-mono disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   <div className="mt-1 flex flex-wrap gap-1">
                     {['+', '-', '×', '✓', '⑃', '^A', '^C', '⌘', '🔥', '⭐', '✨', '🚀'].map(icon => (
                       <button
                         key={icon}
                         onClick={() => componentStore.updateProps(component.id, { iconLeft: icon, iconLeftEnabled: true })}
-                        className="px-2 py-0.5 text-xs bg-accent hover:bg-accent/80 rounded font-mono"
+                        className="px-1.5 py-0.5 text-[10px] bg-accent hover:bg-accent/80 rounded font-mono"
                         title={`Use ${icon}`}
                       >
                         {icon}
@@ -266,7 +290,7 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
                         })
                       }
                     />
-                    <label htmlFor="iconRightEnabled" className="text-sm font-medium">
+                    <label htmlFor="iconRightEnabled" className="text-xs font-medium">
                       Icon Right
                     </label>
                   </div>
@@ -281,14 +305,14 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
                     }
                     placeholder="▾ or ✓"
                     disabled={!(component.props.iconRightEnabled as boolean)}
-                    className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm font-mono disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs font-mono disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   <div className="mt-1 flex flex-wrap gap-1">
                     {['▾', '▴', '→', '←', '↓', '↑', '⏎', '✓', '✗', '⚡', '💡'].map(icon => (
                       <button
                         key={icon}
                         onClick={() => componentStore.updateProps(component.id, { iconRight: icon, iconRightEnabled: true })}
-                        className="px-2 py-0.5 text-xs bg-accent hover:bg-accent/80 rounded font-mono"
+                        className="px-1.5 py-0.5 text-[10px] bg-accent hover:bg-accent/80 rounded font-mono"
                         title={`Use ${icon}`}
                       >
                         {icon}
@@ -299,7 +323,7 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
               </div>
 
               <div>
-                <label className="text-sm font-medium mb-2 block">Number (with icon)</label>
+                <label className="text-xs font-medium mb-1.5 block">Number (with icon)</label>
                 <input
                   type="number"
                   value={(component.props.number as number) || ''}
@@ -309,7 +333,7 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
                     })
                   }
                   placeholder="Optional"
-                  className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm"
+                  className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs"
                 />
               </div>
 
@@ -324,7 +348,7 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
                     })
                   }
                 />
-                <label htmlFor="separated" className="text-sm">
+                <label htmlFor="separated" className="text-xs">
                   Separated Layout (with divider)
                 </label>
               </div>
@@ -340,7 +364,7 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
                     })
                   }
                 />
-                <label htmlFor="disabled" className="text-sm">
+                <label htmlFor="disabled" className="text-xs">
                   Disabled
                 </label>
               </div>
@@ -350,7 +374,7 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
           {component.type === 'TextInput' && (
             <>
               <div>
-                <label className="text-sm font-medium mb-2 block">Placeholder</label>
+                <label className="text-xs font-medium mb-1.5 block">Placeholder</label>
                 <input
                   type="text"
                   value={(component.props.placeholder as string) || ''}
@@ -359,11 +383,11 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
                       placeholder: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm"
+                  className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">Default Value</label>
+                <label className="text-xs font-medium mb-1.5 block">Default Value</label>
                 <input
                   type="text"
                   value={(component.props.value as string) || ''}
@@ -372,7 +396,7 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
                       value: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm"
+                  className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs"
                 />
               </div>
             </>
@@ -380,7 +404,7 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
 
           {(component.type === 'List' || component.type === 'Select' || component.type === 'Menu') && (
             <div>
-              <label className="text-sm font-medium mb-2 block">
+              <label className="text-xs font-medium mb-1.5 block">
                 Items (one per line)
               </label>
               <textarea
@@ -396,15 +420,138 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
                 }
                 rows={5}
                 placeholder="Item 1&#10;Item 2&#10;Item 3"
-                className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm font-mono resize-none"
+                className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs font-mono resize-none"
               />
+            </div>
+          )}
+
+          {component.type === 'Tabs' && (
+            <div className="space-y-3">
+              <label className="text-xs font-medium mb-1.5 block">Tabs</label>
+              {Array.isArray(component.props.tabs) &&
+                (component.props.tabs as any[]).map((tab, index) => {
+                  const tabData = typeof tab === 'string' ? { label: tab, icon: '', status: false, hotkey: '' } : tab;
+
+                  return (
+                    <div key={index} className="p-2 bg-accent/50 rounded space-y-2">
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="text"
+                          value={tabData.label || ''}
+                          onChange={(e) => {
+                            const newTabs = [...(component.props.tabs as any[])];
+                            newTabs[index] = { ...tabData, label: e.target.value };
+                            componentStore.updateProps(component.id, { tabs: newTabs });
+                          }}
+                          className="flex-1 px-2 py-1 bg-secondary border border-border rounded text-xs"
+                          placeholder="Label"
+                        />
+                        <button
+                          onClick={() => {
+                            const newTabs = (component.props.tabs as any[]).filter((_, i) => i !== index);
+                            const activeTab = component.props.activeTab as number;
+                            const newActiveTab = activeTab >= newTabs.length ? Math.max(0, newTabs.length - 1) : activeTab;
+                            componentStore.updateProps(component.id, {
+                              tabs: newTabs,
+                              activeTab: newActiveTab,
+                            });
+                          }}
+                          className="px-2 py-1 bg-secondary hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-colors"
+                          title="Remove tab"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <label className="text-[10px] text-muted-foreground mb-1 block">Icon</label>
+                          <input
+                            type="text"
+                            value={tabData.icon || ''}
+                            onChange={(e) => {
+                              const newTabs = [...(component.props.tabs as any[])];
+                              newTabs[index] = { ...tabData, icon: e.target.value };
+                              componentStore.updateProps(component.id, { tabs: newTabs });
+                            }}
+                            className="w-full px-2 py-1 bg-secondary border border-border rounded text-xs text-center"
+                            placeholder="⌂"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] text-muted-foreground mb-1 block">Status</label>
+                          <div className="flex items-center justify-center h-7">
+                            <input
+                              type="checkbox"
+                              checked={tabData.status || false}
+                              onChange={(e) => {
+                                const newTabs = [...(component.props.tabs as any[])];
+                                newTabs[index] = { ...tabData, status: e.target.checked };
+                                componentStore.updateProps(component.id, { tabs: newTabs });
+                              }}
+                              className="w-4 h-4"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] text-muted-foreground mb-1 block">Hotkey</label>
+                          <input
+                            type="text"
+                            value={tabData.hotkey || ''}
+                            onChange={(e) => {
+                              const newTabs = [...(component.props.tabs as any[])];
+                              newTabs[index] = { ...tabData, hotkey: e.target.value };
+                              componentStore.updateProps(component.id, { tabs: newTabs });
+                            }}
+                            className="w-full px-2 py-1 bg-secondary border border-border rounded text-xs text-center font-mono"
+                            placeholder="^1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              <button
+                onClick={() => {
+                  const currentTabs = (component.props.tabs as any[]) || [];
+                  const newTabs = [...currentTabs, { label: `Tab ${currentTabs.length + 1}`, icon: '', status: false, hotkey: '' }];
+                  componentStore.updateProps(component.id, { tabs: newTabs });
+                }}
+                className="w-full px-2 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded text-xs"
+              >
+                + Add Tab
+              </button>
+              <div>
+                <label className="text-xs font-medium mb-1.5 block">Active Tab</label>
+                <select
+                  value={(component.props.activeTab as number) || 0}
+                  onChange={(e) =>
+                    componentStore.updateProps(component.id, {
+                      activeTab: parseInt(e.target.value),
+                    })
+                  }
+                  className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs"
+                >
+                  {Array.isArray(component.props.tabs) &&
+                    (component.props.tabs as any[]).map((tab, index) => {
+                      const label = typeof tab === 'string' ? tab : tab.label || `Tab ${index + 1}`;
+                      return (
+                        <option key={index} value={index}>
+                          {label}
+                        </option>
+                      );
+                    })}
+                </select>
+              </div>
             </div>
           )}
 
           {component.type === 'ProgressBar' && (
             <>
               <div>
-                <label className="text-sm font-medium mb-2 block">Value</label>
+                <label className="text-xs font-medium mb-1.5 block">Value</label>
                 <input
                   type="number"
                   value={(component.props.value as number) || 0}
@@ -415,11 +562,11 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
                   }
                   min={0}
                   max={(component.props.max as number) || 100}
-                  className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm"
+                  className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">Max</label>
+                <label className="text-xs font-medium mb-1.5 block">Max</label>
                 <input
                   type="number"
                   value={(component.props.max as number) || 100}
@@ -429,7 +576,7 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
                     })
                   }
                   min={1}
-                  className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm"
+                  className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs"
                 />
               </div>
             </>
@@ -467,11 +614,11 @@ function ScreenSizeInput({
   return (
     <div className="space-y-3">
       <div>
-        <label className="text-sm font-medium mb-2 block">Screen Size</label>
+        <label className="text-xs font-medium mb-1.5 block">Screen Size</label>
         <select
           value={preset}
           onChange={(e) => handlePresetChange(e.target.value as any)}
-          className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm"
+          className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs"
         >
           <option value="default">Default (80×25)</option>
           <option value="fullscreen">Full Screen (Fill)</option>
@@ -482,7 +629,7 @@ function ScreenSizeInput({
       {preset === 'custom' && (
         <div className="space-y-3 pl-4 border-l-2 border-border">
           <div>
-            <label className="text-sm font-medium mb-2 block">Columns (Width)</label>
+            <label className="text-xs font-medium mb-1.5 block">Columns (Width)</label>
             <input
               type="number"
               value={typeof currentWidth === 'number' ? currentWidth : 80}
@@ -492,11 +639,11 @@ function ScreenSizeInput({
               }}
               min={20}
               max={300}
-              className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm"
+              className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs"
             />
           </div>
           <div>
-            <label className="text-sm font-medium mb-2 block">Rows (Height)</label>
+            <label className="text-xs font-medium mb-1.5 block">Rows (Height)</label>
             <input
               type="number"
               value={typeof currentHeight === 'number' ? currentHeight : 25}
@@ -506,7 +653,7 @@ function ScreenSizeInput({
               }}
               min={10}
               max={100}
-              className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm"
+              className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs"
             />
           </div>
         </div>
@@ -529,14 +676,14 @@ function EventsTab({ component }: { component: import('../../types').ComponentNo
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="text-sm text-muted-foreground mb-4">
+    <div className="space-y-3">
+      <div className="text-xs text-muted-foreground mb-3">
         Define event handler function names. These will be included in the exported code.
       </div>
 
       {eventTypes.map((event) => (
         <div key={event.key}>
-          <label className="text-sm font-medium mb-2 block">{event.label}</label>
+          <label className="text-xs font-medium mb-1.5 block">{event.label}</label>
           <input
             type="text"
             value={(component.events[event.key] as string) || ''}
@@ -546,7 +693,7 @@ function EventsTab({ component }: { component: import('../../types').ComponentNo
               })
             }
             placeholder={`handle${event.label.replace('On ', '')}`}
-            className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm font-mono"
+            className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs font-mono"
           />
         </div>
       ))}

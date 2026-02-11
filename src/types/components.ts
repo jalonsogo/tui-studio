@@ -59,6 +59,9 @@ export interface ComponentProps {
   minHeight?: number;
   maxHeight?: number;
 
+  // Theme (for Screen and container components)
+  theme?: string; // Theme name like 'dracula', 'nord', etc.
+
   // Type-specific props
   [key: string]: unknown;
 }

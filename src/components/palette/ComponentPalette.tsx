@@ -36,7 +36,7 @@ export function ComponentPalette() {
         id: 'root',
         type: 'Box',
         name: 'Root',
-        props: { width: 80, height: 24 },
+        props: { width: 80, height: 24, theme: 'dracula' },
         layout: {
           type: 'flexbox',
           direction: 'column',
@@ -79,12 +79,8 @@ export function ComponentPalette() {
   };
 
   return (
-    <div className="p-4">
-      <h2 className="text-sm font-semibold mb-4 text-muted-foreground uppercase">
-        Components
-      </h2>
-
-      <div className="space-y-2">
+    <div className="p-2">
+      <div className="space-y-1">
         {CATEGORIES.map((category) => {
           const isExpanded = expandedCategories.has(category.id);
           const components = getComponentsByCategory(category.id);
@@ -94,22 +90,22 @@ export function ComponentPalette() {
               {/* Category Header */}
               <button
                 onClick={() => toggleCategory(category.id)}
-                className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-accent rounded text-sm font-medium"
+                className="w-full flex items-center gap-1.5 px-2 py-1 hover:bg-accent rounded text-xs font-medium"
               >
                 {isExpanded ? (
-                  <ChevronDown className="w-4 h-4" />
+                  <ChevronDown className="w-3 h-3" />
                 ) : (
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="w-3 h-3" />
                 )}
                 {category.name}
-                <span className="ml-auto text-xs text-muted-foreground">
+                <span className="ml-auto text-[10px] text-muted-foreground">
                   {components.length}
                 </span>
               </button>
 
               {/* Components */}
               {isExpanded && (
-                <div className="ml-2 mt-1 space-y-1">
+                <div className="ml-1 mt-0.5 space-y-0.5">
                   {components.map((component) => {
                     const IconComponent = (LucideIcons as any)[component.icon];
 
@@ -129,16 +125,16 @@ export function ComponentPalette() {
                         onDragEnd={() => {
                           dragStore.endDrag();
                         }}
-                        className="w-full p-2 rounded border border-border hover:bg-accent hover:border-accent-foreground transition-colors flex items-center gap-3 text-left cursor-move"
+                        className="w-full px-2 py-1 rounded border border-border hover:bg-accent hover:border-accent-foreground transition-colors flex items-center gap-2 text-left cursor-move"
                       >
                         {IconComponent && (
-                          <IconComponent className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                          <IconComponent className="w-3 h-3 text-muted-foreground flex-shrink-0" />
                         )}
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm truncate">
+                          <div className="font-medium text-xs truncate">
                             {component.name}
                           </div>
-                          <div className="text-xs text-muted-foreground truncate">
+                          <div className="text-[10px] text-muted-foreground truncate leading-tight">
                             {component.description}
                           </div>
                         </div>

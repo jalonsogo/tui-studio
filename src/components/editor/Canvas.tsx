@@ -5,6 +5,25 @@ import { useCanvasStore, useComponentStore, useSelectionStore, useThemeStore } f
 import { layoutEngine } from '../../utils/layout';
 import { dragStore } from '../../hooks/useDragAndDrop';
 import { COMPONENT_LIBRARY, canHaveChildren } from '../../constants/components';
+import { THEMES } from '../../stores/themeStore';
+import type { ComponentNode } from '../../types';
+
+// Helper to find the active theme for a component by walking up the tree
+function findComponentTheme(node: ComponentNode, componentStore: any): string {
+  // Check if this node has a theme
+  if (node.props.theme && typeof node.props.theme === 'string') {
+    return node.props.theme;
+  }
+
+  // Walk up to find parent with theme
+  const parent = componentStore.getParent(node.id);
+  if (parent) {
+    return findComponentTheme(parent, componentStore);
+  }
+
+  // Default fallback
+  return 'dracula';
+}
 
 export function Canvas() {
   console.log('🎨 Canvas component mounted/rendering');
@@ -132,7 +151,7 @@ export function Canvas() {
           id: 'root',
           type: 'Screen',
           name: 'Main Screen',
-          props: { width: 80, height: 24 },
+          props: { width: 80, height: 24, theme: 'dracula' },
           layout: {
             type: 'absolute',
           },
@@ -270,18 +289,21 @@ function ComponentRenderer({ node, cellWidth, cellHeight, zoom }: ComponentRende
   // Subscribe to entire store to avoid stale state
   const selectionStore = useSelectionStore();
   const componentStore = useComponentStore();
-  const themeStore = useThemeStore();
 
   const selectedIds = selectionStore.selectedIds;
   const isSelected = selectedIds.has(node.id);
 
-  // Helper to convert ANSI color name to hex
+  // Find the active theme for this component
+  const activeThemeName = findComponentTheme(node, componentStore);
+  const activeTheme = THEMES[activeThemeName as keyof typeof THEMES] || THEMES.dracula;
+
+  // Helper to convert ANSI color name to hex using component's theme
   const getColor = (color?: string): string | undefined => {
     if (!color) return undefined;
     // If it's already a hex color, return it
     if (color.startsWith('#')) return color;
-    // Otherwise, look it up in ANSI colors
-    return themeStore.ansiColors[color as keyof typeof themeStore.ansiColors] || color;
+    // Otherwise, look it up in the component's theme ANSI colors
+    return activeTheme[color as keyof typeof activeTheme] || color;
   };
 
   const layout = layoutEngine.getLayout(node.id);
@@ -349,6 +371,45 @@ function ComponentRenderer({ node, cellWidth, cellHeight, zoom }: ComponentRende
         return `[${node.props.checked ? '✓' : ' '}] Checkbox`;
       case 'Spinner':
         return '⣾ Loading...';
+      case 'Tabs': {
+        const tabs = (node.props.tabs as any[]) || [];
+        const activeTab = (node.props.activeTab as number) || 0;
+
+        // Build tab content strings
+        const tabContents = tabs.map((tab, i) => {
+          const isActive = i === activeTab;
+          const label = typeof tab === 'string' ? tab : tab.label || 'Tab';
+          const icon = typeof tab === 'object' && tab.icon ? `${tab.icon} ` : '';
+          const status = typeof tab === 'object' && tab.status ? ' ●' : '';
+          const hotkey = typeof tab === 'object' && tab.hotkey ? `   ${tab.hotkey}` : '';
+
+          return ` ${icon}${label}${status}${hotkey} `;
+        });
+
+        // First row: top borders
+        const topRow = tabContents.map((content, i) => {
+          return ` ╭${'─'.repeat(content.length - 2)}╮`;
+        }).join('');
+
+        // Second row: content
+        const contentRow = tabContents.map((content, i) => {
+          return ` │${content.slice(1, -1)}│`;
+        }).join('');
+
+        // Third row: bottom with connection
+        const activeIndex = activeTab;
+        let bottomRow = '─';
+        tabContents.forEach((content, i) => {
+          if (i === activeIndex) {
+            bottomRow += `┴${'─'.repeat(content.length - 2)}┴╯`;
+          } else {
+            bottomRow += `╰${'─'.repeat(content.length - 2)}┴`;
+          }
+        });
+        bottomRow += '──────';
+
+        return `${topRow}\n${contentRow}\n${bottomRow}`;
+      }
       default:
         return node.type;
     }
@@ -370,6 +431,78 @@ function ComponentRenderer({ node, cellWidth, cellHeight, zoom }: ComponentRende
               <div key={i}>• {item}</div>
             ))}
             {items.length > 5 && <div className="text-muted-foreground">... +{items.length - 5} more</div>}
+          </div>
+        );
+      }
+      case 'Tabs': {
+        const tabs = (node.props.tabs as any[]) || [];
+        const activeTab = (node.props.activeTab as number) || 0;
+
+        return (
+          <div className="font-mono leading-none text-xs">
+            {/* Top borders */}
+            <div className="flex">
+              {tabs.map((tab, i) => {
+                const label = typeof tab === 'string' ? tab : tab.label || 'Tab';
+                const icon = typeof tab === 'object' && tab.icon ? `${tab.icon} ` : '';
+                const status = typeof tab === 'object' && tab.status ? ' ●' : '';
+                const hotkey = typeof tab === 'object' && tab.hotkey ? `   ${tab.hotkey}` : '';
+                const content = ` ${icon}${label}${status}${hotkey} `;
+                const barLength = content.length - 2;
+
+                return (
+                  <div key={i} className="flex-shrink-0">
+                    <div> ╭{'─'.repeat(barLength)}╮</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Content row */}
+            <div className="flex">
+              {tabs.map((tab, i) => {
+                const isActive = i === activeTab;
+                const label = typeof tab === 'string' ? tab : tab.label || 'Tab';
+                const icon = typeof tab === 'object' && tab.icon ? `${tab.icon} ` : '';
+                const status = typeof tab === 'object' && tab.status ? ' ●' : '';
+                const hotkey = typeof tab === 'object' && tab.hotkey ? `   ${tab.hotkey}` : '';
+                const content = `${icon}${label}${status}${hotkey}`;
+
+                return (
+                  <div key={i} className={`flex-shrink-0 ${isActive ? 'font-bold' : 'text-muted-foreground'}`}>
+                    <div> │{content}│</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Bottom borders with connection */}
+            <div className="flex">
+              <span>─</span>
+              {tabs.map((tab, i) => {
+                const isActive = i === activeTab;
+                const label = typeof tab === 'string' ? tab : tab.label || 'Tab';
+                const icon = typeof tab === 'object' && tab.icon ? `${tab.icon} ` : '';
+                const status = typeof tab === 'object' && tab.status ? ' ●' : '';
+                const hotkey = typeof tab === 'object' && tab.hotkey ? `   ${tab.hotkey}` : '';
+                const content = ` ${icon}${label}${status}${hotkey} `;
+                const barLength = content.length - 2;
+
+                if (isActive) {
+                  return (
+                    <span key={i} className="flex-shrink-0">
+                      ┴{'─'.repeat(barLength)}┴╯
+                    </span>
+                  );
+                }
+                return (
+                  <span key={i} className="flex-shrink-0 text-muted-foreground">
+                    ╰{'─'.repeat(barLength)}┴
+                  </span>
+                );
+              })}
+              <span>──────</span>
+            </div>
           </div>
         );
       }

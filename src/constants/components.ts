@@ -28,6 +28,7 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     defaultProps: {
       width: 'auto',
       height: 'auto',
+      theme: 'dracula', // Default theme
     },
     defaultLayout: {
       type: 'flexbox',
@@ -437,10 +438,14 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     type: 'Tabs',
     name: 'Tabs',
     description: 'Tab navigation',
-    icon: 'Tabs',
+    icon: 'PanelTop',
     category: 'navigation',
     defaultProps: {
-      tabs: ['Tab 1', 'Tab 2', 'Tab 3'],
+      tabs: [
+        { label: 'Dashboard', icon: '⌂', status: false, hotkey: '' },
+        { label: 'Agent', icon: '', status: true, hotkey: '^1' },
+        { label: 'QA Team', icon: '', status: false, hotkey: '^2' },
+      ],
       activeTab: 0,
     },
     defaultLayout: {

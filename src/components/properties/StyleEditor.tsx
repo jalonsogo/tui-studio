@@ -16,7 +16,7 @@ export function StyleEditor({ component }: StyleEditorProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Border */}
       <div>
         <div className="flex items-center gap-2 mb-3">
@@ -26,7 +26,7 @@ export function StyleEditor({ component }: StyleEditorProps) {
             checked={component.style.border || false}
             onChange={(e) => updateStyle({ border: e.target.checked })}
           />
-          <label htmlFor="border" className="text-sm font-medium">
+          <label htmlFor="border" className="text-xs font-medium">
             Border
           </label>
         </div>
@@ -34,11 +34,11 @@ export function StyleEditor({ component }: StyleEditorProps) {
         {component.style.border && (
           <div className="space-y-3 ml-6">
             <div>
-              <label className="text-sm font-medium mb-2 block">Style</label>
+              <label className="text-xs font-medium mb-1.5 block">Style</label>
               <select
                 value={component.style.borderStyle || 'single'}
                 onChange={(e) => updateStyle({ borderStyle: e.target.value as any })}
-                className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm"
+                className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs"
               >
                 <option value="single">Single (─ │)</option>
                 <option value="double">Double (═ ║)</option>
@@ -57,7 +57,7 @@ export function StyleEditor({ component }: StyleEditorProps) {
             {/* Individual Borders */}
             <div className="space-y-2">
               <label className="text-sm font-medium block">Sides</label>
-              <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="grid grid-cols-2 gap-2 text-xs">
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -119,7 +119,7 @@ export function StyleEditor({ component }: StyleEditorProps) {
               checked={component.style.bold || false}
               onChange={(e) => updateStyle({ bold: e.target.checked })}
             />
-            <span className="text-sm font-bold">Bold</span>
+            <span className="text-xs font-bold">Bold</span>
           </label>
           <label className="flex items-center gap-2">
             <input
@@ -127,7 +127,7 @@ export function StyleEditor({ component }: StyleEditorProps) {
               checked={component.style.italic || false}
               onChange={(e) => updateStyle({ italic: e.target.checked })}
             />
-            <span className="text-sm italic">Italic</span>
+            <span className="text-xs italic">Italic</span>
           </label>
           <label className="flex items-center gap-2">
             <input
@@ -135,7 +135,7 @@ export function StyleEditor({ component }: StyleEditorProps) {
               checked={component.style.underline || false}
               onChange={(e) => updateStyle({ underline: e.target.checked })}
             />
-            <span className="text-sm underline">Underline</span>
+            <span className="text-xs underline">Underline</span>
           </label>
           <label className="flex items-center gap-2">
             <input
@@ -143,7 +143,7 @@ export function StyleEditor({ component }: StyleEditorProps) {
               checked={component.style.strikethrough || false}
               onChange={(e) => updateStyle({ strikethrough: e.target.checked })}
             />
-            <span className="text-sm line-through">Strikethrough</span>
+            <span className="text-xs line-through">Strikethrough</span>
           </label>
         </div>
       </div>
@@ -172,7 +172,7 @@ export function StyleEditor({ component }: StyleEditorProps) {
           checked={component.style.shadow || false}
           onChange={(e) => updateStyle({ shadow: e.target.checked })}
         />
-        <label htmlFor="shadow" className="text-sm">
+        <label htmlFor="shadow" className="text-xs">
           Drop Shadow
         </label>
       </div>
