@@ -196,11 +196,17 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     defaultProps: {
       label: 'Option',
       checked: false,
+      checkedIcon: '✓',
+      uncheckedIcon: ' ',
     },
     defaultLayout: {
       type: 'none',
     },
-    defaultStyle: {},
+    defaultStyle: {
+      checkedColor: 'green',
+      uncheckedColor: 'white',
+      labelColor: 'white',
+    },
     defaultEvents: {
       onChange: 'handleChange',
     },
@@ -215,11 +221,17 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     defaultProps: {
       label: 'Option',
       checked: false,
+      selectedIcon: '●',
+      unselectedIcon: '○',
     },
     defaultLayout: {
       type: 'none',
     },
-    defaultStyle: {},
+    defaultStyle: {
+      selectedColor: 'blue',
+      unselectedColor: 'white',
+      labelColor: 'white',
+    },
     defaultEvents: {
       onChange: 'handleChange',
     },
@@ -382,8 +394,14 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     icon: 'List',
     category: 'data',
     defaultProps: {
-      items: ['Item 1', 'Item 2', 'Item 3'],
+      items: [
+        { label: 'Item 1', icon: '•', hotkey: '1' },
+        { label: 'Item 2', icon: '•', hotkey: '2' },
+        { label: 'Item 3', icon: '•', hotkey: '3' },
+      ],
       selectedIndex: 0,
+      width: 'auto',
+      height: 'auto',
     },
     defaultLayout: {
       type: 'flexbox',
@@ -405,7 +423,25 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     icon: 'Network',
     category: 'data',
     defaultProps: {
-      items: [],
+      items: [
+        {
+          label: 'Root',
+          icon: '📁',
+          expanded: true,
+          children: [
+            { label: 'Child 1', icon: '📄', children: [] },
+            {
+              label: 'Child 2',
+              icon: '📁',
+              expanded: false,
+              children: [
+                { label: 'Nested 1', icon: '📄', children: [] },
+              ]
+            },
+          ]
+        },
+        { label: 'Root 2', icon: '📁', expanded: false, children: [] },
+      ],
     },
     defaultLayout: {
       type: 'flexbox',
@@ -422,7 +458,14 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     icon: 'Menu',
     category: 'navigation',
     defaultProps: {
-      items: ['Home', 'Settings', 'Exit'],
+      items: [
+        { label: 'Home', icon: '⌂', hotkey: '^H' },
+        { label: 'Settings', icon: '⚙', hotkey: '^S' },
+        { label: 'Exit', icon: '✕', hotkey: '^Q' },
+      ],
+      selectedIndex: 0,
+      width: 'auto',
+      height: 'auto',
     },
     defaultLayout: {
       type: 'flexbox',
@@ -462,7 +505,12 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     icon: 'ChevronRight',
     category: 'navigation',
     defaultProps: {
-      items: ['Home', 'Documents', 'File'],
+      items: [
+        { label: 'Home', icon: '⌂' },
+        { label: 'Documents', icon: '📁' },
+        { label: 'File', icon: '📄' },
+      ],
+      separator: ' / ',
     },
     defaultLayout: {
       type: 'flexbox',

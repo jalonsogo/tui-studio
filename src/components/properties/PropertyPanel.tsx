@@ -402,26 +402,676 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
             </>
           )}
 
-          {(component.type === 'List' || component.type === 'Select' || component.type === 'Menu') && (
+          {component.type === 'Checkbox' && (
+            <>
+              <div>
+                <label className="text-xs font-medium mb-1.5 block">Label</label>
+                <input
+                  type="text"
+                  value={(component.props.label as string) || ''}
+                  onChange={(e) =>
+                    componentStore.updateProps(component.id, { label: e.target.value })
+                  }
+                  className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-medium mb-1.5 block">State</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="checkbox-checked"
+                    checked={(component.props.checked as boolean) || false}
+                    onChange={(e) =>
+                      componentStore.updateProps(component.id, { checked: e.target.checked })
+                    }
+                    className="w-4 h-4"
+                  />
+                  <label htmlFor="checkbox-checked" className="text-xs">Checked</label>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium mb-1.5 block">Checked Icon</label>
+                <select
+                  value={(component.props.checkedIcon as string) || '✓'}
+                  onChange={(e) =>
+                    componentStore.updateProps(component.id, { checkedIcon: e.target.value })
+                  }
+                  className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs text-center font-mono"
+                >
+                  <option value="✓">✓ Check</option>
+                  <option value="✗">✗ X</option>
+                  <option value="×">× Times</option>
+                  <option value="●">● Filled</option>
+                  <option value="■">■ Square</option>
+                  <option value="★">★ Star</option>
+                  <option value="+">+ Plus</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium mb-1.5 block">Unchecked Icon</label>
+                <select
+                  value={(component.props.uncheckedIcon as string) || ' '}
+                  onChange={(e) =>
+                    componentStore.updateProps(component.id, { uncheckedIcon: e.target.value })
+                  }
+                  className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs text-center font-mono"
+                >
+                  <option value=" ">  Empty</option>
+                  <option value="○">○ Circle</option>
+                  <option value="□">□ Square</option>
+                  <option value="-">- Dash</option>
+                  <option value="·">· Dot</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium mb-1.5 block">Checked Color</label>
+                <select
+                  value={(component.style.checkedColor as string) || 'green'}
+                  onChange={(e) =>
+                    componentStore.updateStyle(component.id, { checkedColor: e.target.value })
+                  }
+                  className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs"
+                >
+                  <option value="black">Black</option>
+                  <option value="red">Red</option>
+                  <option value="green">Green</option>
+                  <option value="yellow">Yellow</option>
+                  <option value="blue">Blue</option>
+                  <option value="magenta">Magenta</option>
+                  <option value="cyan">Cyan</option>
+                  <option value="white">White</option>
+                  <option value="brightRed">Bright Red</option>
+                  <option value="brightGreen">Bright Green</option>
+                  <option value="brightYellow">Bright Yellow</option>
+                  <option value="brightBlue">Bright Blue</option>
+                  <option value="brightMagenta">Bright Magenta</option>
+                  <option value="brightCyan">Bright Cyan</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium mb-1.5 block">Unchecked Color</label>
+                <select
+                  value={(component.style.uncheckedColor as string) || 'white'}
+                  onChange={(e) =>
+                    componentStore.updateStyle(component.id, { uncheckedColor: e.target.value })
+                  }
+                  className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs"
+                >
+                  <option value="black">Black</option>
+                  <option value="red">Red</option>
+                  <option value="green">Green</option>
+                  <option value="yellow">Yellow</option>
+                  <option value="blue">Blue</option>
+                  <option value="magenta">Magenta</option>
+                  <option value="cyan">Cyan</option>
+                  <option value="white">White</option>
+                  <option value="brightRed">Bright Red</option>
+                  <option value="brightGreen">Bright Green</option>
+                  <option value="brightYellow">Bright Yellow</option>
+                  <option value="brightBlue">Bright Blue</option>
+                  <option value="brightMagenta">Bright Magenta</option>
+                  <option value="brightCyan">Bright Cyan</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium mb-1.5 block">Label Color</label>
+                <select
+                  value={(component.style.labelColor as string) || 'white'}
+                  onChange={(e) =>
+                    componentStore.updateStyle(component.id, { labelColor: e.target.value })
+                  }
+                  className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs"
+                >
+                  <option value="black">Black</option>
+                  <option value="red">Red</option>
+                  <option value="green">Green</option>
+                  <option value="yellow">Yellow</option>
+                  <option value="blue">Blue</option>
+                  <option value="magenta">Magenta</option>
+                  <option value="cyan">Cyan</option>
+                  <option value="white">White</option>
+                  <option value="brightRed">Bright Red</option>
+                  <option value="brightGreen">Bright Green</option>
+                  <option value="brightYellow">Bright Yellow</option>
+                  <option value="brightBlue">Bright Blue</option>
+                  <option value="brightMagenta">Bright Magenta</option>
+                  <option value="brightCyan">Bright Cyan</option>
+                </select>
+              </div>
+            </>
+          )}
+
+          {component.type === 'Radio' && (
+            <>
+              <div>
+                <label className="text-xs font-medium mb-1.5 block">Label</label>
+                <input
+                  type="text"
+                  value={(component.props.label as string) || ''}
+                  onChange={(e) =>
+                    componentStore.updateProps(component.id, { label: e.target.value })
+                  }
+                  className="w-full px-1.5 py-0.5 bg-secondary border border-border rounded text-xs"
+                  placeholder="Option"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
+                  <input
+                    id="radio-checked"
+                    type="checkbox"
+                    checked={component.props.checked as boolean}
+                    onChange={(e) =>
+                      componentStore.updateProps(component.id, { checked: e.target.checked })
+                    }
+                    className="w-4 h-4"
+                  />
+                  <label htmlFor="radio-checked" className="text-xs">Selected</label>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium mb-1.5 block">Selected Icon</label>
+                <select
+                  value={(component.props.selectedIcon as string) || '●'}
+                  onChange={(e) =>
+                    componentStore.updateProps(component.id, { selectedIcon: e.target.value })
+                  }
+                  className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs text-center font-mono"
+                >
+                  <option value="●">● Filled</option>
+                  <option value="◉">◉ Dotted</option>
+                  <option value="⦿">⦿ Bullseye</option>
+                  <option value="◆">◆ Diamond</option>
+                  <option value="■">■ Square</option>
+                  <option value="▪">▪ Small Square</option>
+                  <option value="✓">✓ Check</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium mb-1.5 block">Unselected Icon</label>
+                <select
+                  value={(component.props.unselectedIcon as string) || '○'}
+                  onChange={(e) =>
+                    componentStore.updateProps(component.id, { unselectedIcon: e.target.value })
+                  }
+                  className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs text-center font-mono"
+                >
+                  <option value="○">○ Circle</option>
+                  <option value="◯">◯ White Circle</option>
+                  <option value="◇">◇ Diamond</option>
+                  <option value="□">□ Square</option>
+                  <option value="▫">▫ Small Square</option>
+                  <option value=" ">  Empty</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium mb-1.5 block">Selected Color</label>
+                <select
+                  value={(component.style.selectedColor as string) || 'blue'}
+                  onChange={(e) =>
+                    componentStore.updateStyle(component.id, { selectedColor: e.target.value })
+                  }
+                  className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs"
+                >
+                  <option value="black">Black</option>
+                  <option value="red">Red</option>
+                  <option value="green">Green</option>
+                  <option value="yellow">Yellow</option>
+                  <option value="blue">Blue</option>
+                  <option value="magenta">Magenta</option>
+                  <option value="cyan">Cyan</option>
+                  <option value="white">White</option>
+                  <option value="brightRed">Bright Red</option>
+                  <option value="brightGreen">Bright Green</option>
+                  <option value="brightYellow">Bright Yellow</option>
+                  <option value="brightBlue">Bright Blue</option>
+                  <option value="brightMagenta">Bright Magenta</option>
+                  <option value="brightCyan">Bright Cyan</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium mb-1.5 block">Unselected Color</label>
+                <select
+                  value={(component.style.unselectedColor as string) || 'white'}
+                  onChange={(e) =>
+                    componentStore.updateStyle(component.id, { unselectedColor: e.target.value })
+                  }
+                  className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs"
+                >
+                  <option value="black">Black</option>
+                  <option value="red">Red</option>
+                  <option value="green">Green</option>
+                  <option value="yellow">Yellow</option>
+                  <option value="blue">Blue</option>
+                  <option value="magenta">Magenta</option>
+                  <option value="cyan">Cyan</option>
+                  <option value="white">White</option>
+                  <option value="brightRed">Bright Red</option>
+                  <option value="brightGreen">Bright Green</option>
+                  <option value="brightYellow">Bright Yellow</option>
+                  <option value="brightBlue">Bright Blue</option>
+                  <option value="brightMagenta">Bright Magenta</option>
+                  <option value="brightCyan">Bright Cyan</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium mb-1.5 block">Label Color</label>
+                <select
+                  value={(component.style.labelColor as string) || 'white'}
+                  onChange={(e) =>
+                    componentStore.updateStyle(component.id, { labelColor: e.target.value })
+                  }
+                  className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs"
+                >
+                  <option value="black">Black</option>
+                  <option value="red">Red</option>
+                  <option value="green">Green</option>
+                  <option value="yellow">Yellow</option>
+                  <option value="blue">Blue</option>
+                  <option value="magenta">Magenta</option>
+                  <option value="cyan">Cyan</option>
+                  <option value="white">White</option>
+                  <option value="brightRed">Bright Red</option>
+                  <option value="brightGreen">Bright Green</option>
+                  <option value="brightYellow">Bright Yellow</option>
+                  <option value="brightBlue">Bright Blue</option>
+                  <option value="brightMagenta">Bright Magenta</option>
+                  <option value="brightCyan">Bright Cyan</option>
+                </select>
+              </div>
+            </>
+          )}
+
+          {component.type === 'Select' && (
             <div>
               <label className="text-xs font-medium mb-1.5 block">
-                Items (one per line)
+                Options (one per line)
               </label>
               <textarea
                 value={
-                  Array.isArray(component.props.items)
-                    ? (component.props.items as string[]).join('\n')
+                  Array.isArray(component.props.options)
+                    ? (component.props.options as string[]).join('\n')
                     : ''
                 }
                 onChange={(e) =>
                   componentStore.updateProps(component.id, {
-                    items: e.target.value.split('\n').filter((s) => s.trim()),
+                    options: e.target.value.split('\n').filter((s) => s.trim()),
                   })
                 }
                 rows={5}
-                placeholder="Item 1&#10;Item 2&#10;Item 3"
+                placeholder="Option 1&#10;Option 2&#10;Option 3"
                 className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs font-mono resize-none"
               />
+            </div>
+          )}
+
+          {component.type === 'Menu' && (
+            <div className="space-y-3">
+              <label className="text-xs font-medium mb-1.5 block">Menu Items</label>
+              {Array.isArray(component.props.items) &&
+                (component.props.items as any[]).map((item, index) => {
+                  const itemData = typeof item === 'string' ? { label: item, icon: '', hotkey: '' } : item;
+
+                  const iconOptions = [
+                    { value: '', label: 'None', display: '—' },
+                    { value: '⌂', label: 'Home', display: '⌂' },
+                    { value: '•', label: 'Bullet', display: '•' },
+                    { value: '○', label: 'Circle', display: '○' },
+                    { value: '●', label: 'Filled', display: '●' },
+                    { value: '☐', label: 'Unchecked', display: '☐' },
+                    { value: '☑', label: 'Checked', display: '☑' },
+                    { value: '✓', label: 'Check', display: '✓' },
+                    { value: '✗', label: 'X Mark', display: '✗' },
+                    { value: '×', label: 'Times', display: '×' },
+                    { value: '→', label: 'Arrow', display: '→' },
+                    { value: '›', label: 'Chevron', display: '›' },
+                    { value: '-', label: 'Dash', display: '-' },
+                    { value: '+', label: 'Plus', display: '+' },
+                    { value: '★', label: 'Star', display: '★' },
+                    { value: 'custom', label: 'Custom...', display: '✏️' },
+                  ];
+
+                  const predefinedValues = iconOptions.map(opt => opt.value);
+                  const isCustomIcon = itemData.icon && !predefinedValues.includes(itemData.icon);
+                  const selectedIconValue = isCustomIcon ? 'custom' : (itemData.icon || '');
+
+                  return (
+                    <div key={index} className="p-2 bg-accent/50 rounded space-y-2">
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="text"
+                          value={itemData.label || ''}
+                          onChange={(e) => {
+                            const newItems = [...(component.props.items as any[])];
+                            newItems[index] = { ...itemData, label: e.target.value };
+                            componentStore.updateProps(component.id, { items: newItems });
+                          }}
+                          className="flex-1 px-2 py-1 bg-secondary border border-border rounded text-xs"
+                          placeholder="Label"
+                        />
+                        <button
+                          onClick={() => {
+                            const newItems = (component.props.items as any[]).filter((_, i) => i !== index);
+                            const selectedIndex = component.props.selectedIndex as number;
+                            const newSelectedIndex = selectedIndex >= newItems.length ? Math.max(0, newItems.length - 1) : selectedIndex;
+                            componentStore.updateProps(component.id, {
+                              items: newItems,
+                              selectedIndex: newSelectedIndex,
+                            });
+                          }}
+                          className="px-2 py-1 bg-secondary hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-colors"
+                          title="Remove item"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <div>
+                          <label className="text-[10px] text-muted-foreground mb-1 block">Icon</label>
+                          <select
+                            value={selectedIconValue}
+                            onChange={(e) => {
+                              const newItems = [...(component.props.items as any[])];
+                              if (e.target.value === 'custom') {
+                                // Keep current custom icon or set empty
+                                newItems[index] = { ...itemData };
+                              } else {
+                                newItems[index] = { ...itemData, icon: e.target.value };
+                              }
+                              componentStore.updateProps(component.id, { items: newItems });
+                            }}
+                            className="w-full px-1.5 py-0.5 bg-secondary border border-border rounded text-xs text-center font-mono"
+                          >
+                            {iconOptions.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.display} {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                          {selectedIconValue === 'custom' && (
+                            <input
+                              type="text"
+                              value={itemData.icon || ''}
+                              onChange={(e) => {
+                                const value = e.target.value.slice(0, 3); // Max 3 chars
+                                const newItems = [...(component.props.items as any[])];
+                                newItems[index] = { ...itemData, icon: value };
+                                componentStore.updateProps(component.id, { items: newItems });
+                              }}
+                              maxLength={3}
+                              className="w-full px-1.5 py-0.5 bg-secondary border border-border rounded text-xs text-center font-mono mt-1"
+                              placeholder="Max 3"
+                            />
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] text-muted-foreground mb-1 block">Hotkey</label>
+                          <input
+                            type="text"
+                            value={itemData.hotkey || ''}
+                            onChange={(e) => {
+                              const newItems = [...(component.props.items as any[])];
+                              newItems[index] = { ...itemData, hotkey: e.target.value };
+                              componentStore.updateProps(component.id, { items: newItems });
+                            }}
+                            className="w-full px-1.5 py-0.5 bg-secondary border border-border rounded text-xs text-center font-mono"
+                            placeholder="^H"
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id={`separator-${index}`}
+                            checked={itemData.separator || false}
+                            onChange={(e) => {
+                              const newItems = [...(component.props.items as any[])];
+                              newItems[index] = { ...itemData, separator: e.target.checked };
+                              componentStore.updateProps(component.id, { items: newItems });
+                            }}
+                            className="w-3.5 h-3.5"
+                          />
+                          <label htmlFor={`separator-${index}`} className="text-[10px] text-muted-foreground">
+                            Separator after
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              <button
+                onClick={() => {
+                  const currentItems = (component.props.items as any[]) || [];
+                  const newItems = [...currentItems, { label: `Item ${currentItems.length + 1}`, icon: '⌂', hotkey: '' }];
+                  componentStore.updateProps(component.id, { items: newItems });
+                }}
+                className="w-full px-2 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded text-xs"
+              >
+                + Add Menu Item
+              </button>
+            </div>
+          )}
+
+          {component.type === 'List' && (
+            <div className="space-y-3">
+              <label className="text-xs font-medium mb-1.5 block">List Items</label>
+              {Array.isArray(component.props.items) &&
+                (component.props.items as any[]).map((item, index) => {
+                  const itemData = typeof item === 'string' ? { label: item, icon: '•', hotkey: '' } : item;
+
+                  const iconOptions = [
+                    { value: '•', label: 'Bullet', display: '•' },
+                    { value: '○', label: 'Circle', display: '○' },
+                    { value: '●', label: 'Filled', display: '●' },
+                    { value: '☐', label: 'Unchecked', display: '☐' },
+                    { value: '☑', label: 'Checked', display: '☑' },
+                    { value: '✓', label: 'Check', display: '✓' },
+                    { value: '✗', label: 'X Mark', display: '✗' },
+                    { value: '×', label: 'Times', display: '×' },
+                    { value: '→', label: 'Arrow', display: '→' },
+                    { value: '›', label: 'Chevron', display: '›' },
+                    { value: '-', label: 'Dash', display: '-' },
+                    { value: '+', label: 'Plus', display: '+' },
+                    { value: '★', label: 'Star', display: '★' },
+                    { value: '', label: 'None', display: '—' },
+                  ];
+
+                  return (
+                    <div key={index} className="p-2 bg-accent/50 rounded space-y-2">
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="text"
+                          value={itemData.label || ''}
+                          onChange={(e) => {
+                            const newItems = [...(component.props.items as any[])];
+                            newItems[index] = { ...itemData, label: e.target.value };
+                            componentStore.updateProps(component.id, { items: newItems });
+                          }}
+                          className="flex-1 px-2 py-1 bg-secondary border border-border rounded text-xs"
+                          placeholder="Label"
+                        />
+                        <button
+                          onClick={() => {
+                            const newItems = (component.props.items as any[]).filter((_, i) => i !== index);
+                            const selectedIndex = component.props.selectedIndex as number;
+                            const newSelectedIndex = selectedIndex >= newItems.length ? Math.max(0, newItems.length - 1) : selectedIndex;
+                            componentStore.updateProps(component.id, {
+                              items: newItems,
+                              selectedIndex: newSelectedIndex,
+                            });
+                          }}
+                          className="px-2 py-1 bg-secondary hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-colors"
+                          title="Remove item"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <div>
+                          <label className="text-[10px] text-muted-foreground mb-1 block">Icon</label>
+                          <select
+                            value={itemData.icon || '•'}
+                            onChange={(e) => {
+                              const newItems = [...(component.props.items as any[])];
+                              newItems[index] = { ...itemData, icon: e.target.value };
+                              componentStore.updateProps(component.id, { items: newItems });
+                            }}
+                            className="w-full px-1.5 py-0.5 bg-secondary border border-border rounded text-xs text-center font-mono"
+                          >
+                            {iconOptions.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.display} {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] text-muted-foreground mb-1 block">Hotkey</label>
+                          <input
+                            type="text"
+                            value={itemData.hotkey || ''}
+                            onChange={(e) => {
+                              const newItems = [...(component.props.items as any[])];
+                              newItems[index] = { ...itemData, hotkey: e.target.value };
+                              componentStore.updateProps(component.id, { items: newItems });
+                            }}
+                            className="w-full px-1.5 py-0.5 bg-secondary border border-border rounded text-xs text-center font-mono"
+                            placeholder="1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              <button
+                onClick={() => {
+                  const currentItems = (component.props.items as any[]) || [];
+                  const newItems = [...currentItems, { label: `Item ${currentItems.length + 1}`, icon: '•', hotkey: '' }];
+                  componentStore.updateProps(component.id, { items: newItems });
+                }}
+                className="w-full px-2 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded text-xs"
+              >
+                + Add List Item
+              </button>
+            </div>
+          )}
+
+          {component.type === 'Breadcrumb' && (
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium mb-1.5 block">Separator</label>
+                <input
+                  type="text"
+                  value={(component.props.separator as string) || ' / '}
+                  onChange={(e) =>
+                    componentStore.updateProps(component.id, { separator: e.target.value })
+                  }
+                  className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs text-center font-mono"
+                  placeholder=" / "
+                />
+                <div className="text-[10px] text-muted-foreground mt-1">
+                  Examples: / · → » ›
+                </div>
+              </div>
+              <label className="text-xs font-medium mb-1.5 block">Breadcrumb Items</label>
+              {Array.isArray(component.props.items) &&
+                (component.props.items as any[]).map((item, index) => {
+                  const itemData = typeof item === 'string' ? { label: item, icon: '' } : item;
+
+                  return (
+                    <div key={index} className="p-2 bg-accent/50 rounded space-y-2">
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="text"
+                          value={itemData.label || ''}
+                          onChange={(e) => {
+                            const newItems = [...(component.props.items as any[])];
+                            newItems[index] = { ...itemData, label: e.target.value };
+                            componentStore.updateProps(component.id, { items: newItems });
+                          }}
+                          className="flex-1 px-2 py-1 bg-secondary border border-border rounded text-xs"
+                          placeholder="Label"
+                        />
+                        <button
+                          onClick={() => {
+                            const newItems = (component.props.items as any[]).filter((_, i) => i !== index);
+                            componentStore.updateProps(component.id, { items: newItems });
+                          }}
+                          className="px-2 py-1 bg-secondary hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-colors"
+                          title="Remove item"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] text-muted-foreground mb-1 block">Icon</label>
+                        <input
+                          type="text"
+                          value={itemData.icon || ''}
+                          onChange={(e) => {
+                            const newItems = [...(component.props.items as any[])];
+                            newItems[index] = { ...itemData, icon: e.target.value };
+                            componentStore.updateProps(component.id, { items: newItems });
+                          }}
+                          maxLength={3}
+                          className="w-full px-1.5 py-0.5 bg-secondary border border-border rounded text-xs text-center"
+                          placeholder="⌂"
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              <button
+                onClick={() => {
+                  const currentItems = (component.props.items as any[]) || [];
+                  const newItems = [...currentItems, { label: `Item ${currentItems.length + 1}`, icon: '' }];
+                  componentStore.updateProps(component.id, { items: newItems });
+                }}
+                className="w-full px-2 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded text-xs"
+              >
+                + Add Breadcrumb
+              </button>
+            </div>
+          )}
+
+          {component.type === 'Tree' && (
+            <div className="space-y-3">
+              <label className="text-xs font-medium mb-1.5 block">Tree Structure</label>
+              <TreeItemsEditor
+                items={(component.props.items as any[]) || []}
+                onChange={(newItems) => {
+                  componentStore.updateProps(component.id, { items: newItems });
+                }}
+                level={0}
+              />
+              <button
+                onClick={() => {
+                  const currentItems = (component.props.items as any[]) || [];
+                  const newItems = [...currentItems, { label: `Root ${currentItems.length + 1}`, icon: '📁', expanded: false, children: [] }];
+                  componentStore.updateProps(component.id, { items: newItems });
+                }}
+                className="w-full px-2 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded text-xs"
+              >
+                + Add Root Item
+              </button>
             </div>
           )}
 
@@ -463,7 +1113,7 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
                         </button>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-3 gap-1.5">
                         <div>
                           <label className="text-[10px] text-muted-foreground mb-1 block">Icon</label>
                           <input
@@ -474,14 +1124,15 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
                               newTabs[index] = { ...tabData, icon: e.target.value };
                               componentStore.updateProps(component.id, { tabs: newTabs });
                             }}
-                            className="w-full px-2 py-1 bg-secondary border border-border rounded text-xs text-center"
+                            maxLength={3}
+                            className="w-full px-1.5 py-0.5 bg-secondary border border-border rounded text-xs text-center"
                             placeholder="⌂"
                           />
                         </div>
 
                         <div>
                           <label className="text-[10px] text-muted-foreground mb-1 block">Status</label>
-                          <div className="flex items-center justify-center h-7">
+                          <div className="flex items-center justify-center h-6">
                             <input
                               type="checkbox"
                               checked={tabData.status || false}
@@ -490,7 +1141,7 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
                                 newTabs[index] = { ...tabData, status: e.target.checked };
                                 componentStore.updateProps(component.id, { tabs: newTabs });
                               }}
-                              className="w-4 h-4"
+                              className="w-3.5 h-3.5"
                             />
                           </div>
                         </div>
@@ -505,7 +1156,7 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
                               newTabs[index] = { ...tabData, hotkey: e.target.value };
                               componentStore.updateProps(component.id, { tabs: newTabs });
                             }}
-                            className="w-full px-2 py-1 bg-secondary border border-border rounded text-xs text-center font-mono"
+                            className="w-full px-1.5 py-0.5 bg-secondary border border-border rounded text-xs text-center font-mono"
                             placeholder="^1"
                           />
                         </div>
@@ -697,6 +1348,120 @@ function EventsTab({ component }: { component: import('../../types').ComponentNo
           />
         </div>
       ))}
+    </div>
+  );
+}
+
+// Tree Items Editor Component
+function TreeItemsEditor({ items, onChange, level }: { items: any[]; onChange: (items: any[]) => void; level: number }) {
+  const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
+
+  const toggleExpanded = (index: number) => {
+    const newExpanded = new Set(expandedItems);
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index);
+    } else {
+      newExpanded.add(index);
+    }
+    setExpandedItems(newExpanded);
+  };
+
+  const updateItem = (index: number, updates: any) => {
+    const newItems = [...items];
+    newItems[index] = { ...newItems[index], ...updates };
+    onChange(newItems);
+  };
+
+  const removeItem = (index: number) => {
+    const newItems = items.filter((_, i) => i !== index);
+    onChange(newItems);
+  };
+
+  const addChild = (index: number) => {
+    const newItems = [...items];
+    const children = newItems[index].children || [];
+    newItems[index] = {
+      ...newItems[index],
+      children: [...children, { label: `Child ${children.length + 1}`, icon: '📄', children: [] }],
+      expanded: true,
+    };
+    onChange(newItems);
+    setExpandedItems(new Set(expandedItems).add(index));
+  };
+
+  return (
+    <div className="space-y-2">
+      {items.map((item, index) => {
+        const itemData = typeof item === 'string' ? { label: item, icon: '📄', children: [] } : item;
+        const isExpanded = expandedItems.has(index);
+        const hasChildren = itemData.children && itemData.children.length > 0;
+
+        return (
+          <div key={index} style={{ marginLeft: `${level * 8}px` }}>
+            <div className="p-2 bg-accent/50 rounded space-y-2">
+              <div className="flex gap-2 items-center">
+                {hasChildren && (
+                  <button
+                    onClick={() => toggleExpanded(index)}
+                    className="px-1 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    {isExpanded ? '▼' : '▶'}
+                  </button>
+                )}
+                <input
+                  type="text"
+                  value={itemData.label || ''}
+                  onChange={(e) => updateItem(index, { label: e.target.value })}
+                  className="flex-1 px-2 py-1 bg-secondary border border-border rounded text-xs"
+                  placeholder="Label"
+                />
+                <button
+                  onClick={() => removeItem(index)}
+                  className="px-2 py-1 bg-secondary hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-colors"
+                  title="Remove item"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="text-[10px] text-muted-foreground mb-1 block">Icon</label>
+                  <input
+                    type="text"
+                    value={itemData.icon || ''}
+                    onChange={(e) => updateItem(index, { icon: e.target.value })}
+                    className="w-full px-2 py-1 bg-secondary border border-border rounded text-xs text-center"
+                    placeholder="📁"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <button
+                    onClick={() => addChild(index)}
+                    className="px-2 py-1 bg-secondary hover:bg-accent text-xs rounded whitespace-nowrap"
+                    title="Add child"
+                  >
+                    + Child
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Render children recursively */}
+            {isExpanded && hasChildren && (
+              <div className="mt-2">
+                <TreeItemsEditor
+                  items={itemData.children}
+                  onChange={(newChildren) => {
+                    updateItem(index, { children: newChildren });
+                  }}
+                  level={level + 1}
+                />
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

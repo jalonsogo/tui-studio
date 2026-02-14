@@ -107,6 +107,17 @@ export class LayoutEngine {
   private calculateChildLayouts(container: ComponentNode, containerWidth: number, containerHeight: number): void {
     let childLayouts: Map<string, ComputedLayout>;
 
+    // Force List components to always use column direction
+    if (container.type === 'List' && container.layout.type === 'flexbox' && container.layout.direction !== 'column') {
+      container = {
+        ...container,
+        layout: {
+          ...container.layout,
+          direction: 'column',
+        },
+      };
+    }
+
     switch (container.layout.type) {
       case 'flexbox':
         childLayouts = calculateFlexboxLayout(container, containerWidth, containerHeight);
@@ -199,6 +210,66 @@ export class LayoutEngine {
   }
 
   private calculateAutoWidth(node: ComponentNode): number {
+    // Special case for Menu and List components (items in props, not children)
+    if (node.type === 'Menu' || node.type === 'List') {
+      const items = (node.props.items as any[]) || [];
+      const padding = typeof node.layout.padding === 'number' ? node.layout.padding : 0;
+      const gap = typeof node.layout.gap === 'number' ? node.layout.gap : 0;
+      const border = node.style.border ? 2 : 0;
+
+      // List is always vertical (column direction)
+      const effectiveDirection = node.type === 'List' ? 'column' : node.layout.direction;
+
+      if (node.layout.type === 'flexbox' && effectiveDirection === 'row') {
+        // Horizontal menu - sum item widths
+        let totalWidth = padding * 2;
+
+        items.forEach((item, index) => {
+          const itemData = typeof item === 'string' ? { label: item, icon: '', hotkey: '', separator: false } : item;
+          const icon = itemData.icon ? `${itemData.icon} ` : '';
+          const hotkey = itemData.hotkey ? ` ${itemData.hotkey}` : '';
+          const itemWidth = icon.length + itemData.label.length + hotkey.length;
+
+          totalWidth += itemWidth;
+
+          if (index < items.length - 1) {
+            if (itemData.separator) {
+              // gap + │ + gap
+              totalWidth += (gap * 2) + 1;
+            } else {
+              // just gap
+              totalWidth += gap;
+            }
+          }
+        });
+
+        return totalWidth + border;
+      } else {
+        // Vertical menu/list - use widest item
+        let maxWidth = 0;
+
+        items.forEach(item => {
+          const itemData = typeof item === 'string' ? { label: item, icon: '', hotkey: '' } : item;
+          const icon = itemData.icon ? `${itemData.icon} ` : '';
+          const hotkey = itemData.hotkey ? `   ${itemData.hotkey}` : '';
+
+          // For Menu, add selection indicator; for List, just use the icon
+          let itemWidth: number;
+          if (node.type === 'Menu') {
+            const prefix = '▶ '; // Menu has selection indicator
+            itemWidth = prefix.length + icon.length + itemData.label.length + hotkey.length;
+          } else {
+            // List items: icon + label + hotkey (with spacing)
+            itemWidth = icon.length + itemData.label.length + (hotkey ? hotkey.length : 0);
+          }
+
+          maxWidth = Math.max(maxWidth, itemWidth);
+        });
+
+        return maxWidth + (padding * 2) + border;
+      }
+    }
+
     // For containers (Stack, Box, Screen, etc.), calculate based on children
     if (node.children.length > 0 && ['flexbox', 'grid', 'absolute'].includes(node.layout.type)) {
       const padding = typeof node.layout.padding === 'number' ? node.layout.padding : 0;
@@ -287,6 +358,43 @@ export class LayoutEngine {
   }
 
   private calculateAutoHeight(node: ComponentNode): number {
+    // Special case for Menu and List components (items in props, not children)
+    if (node.type === 'Menu' || node.type === 'List') {
+      const items = (node.props.items as any[]) || [];
+      const padding = typeof node.layout.padding === 'number' ? node.layout.padding : 0;
+      const gap = typeof node.layout.gap === 'number' ? node.layout.gap : 0;
+      const border = node.style.border ? 2 : 0;
+
+      // List is always vertical (column direction)
+      const effectiveDirection = node.type === 'List' ? 'column' : node.layout.direction;
+
+      if (node.layout.type === 'flexbox' && effectiveDirection === 'column') {
+        // Vertical menu/list - sum item heights (1 line per item)
+        let totalHeight = padding * 2;
+        const itemCount = items.length;
+
+        totalHeight += itemCount; // 1 line per item
+
+        if (itemCount > 1) {
+          totalHeight += gap * (itemCount - 1); // gaps between items
+        }
+
+        // Add height for separators (Menu only)
+        if (node.type === 'Menu') {
+          const separatorCount = items.filter((item: any) => {
+            const itemData = typeof item === 'string' ? { separator: false } : item;
+            return itemData.separator;
+          }).length;
+          totalHeight += separatorCount; // 1 extra line per separator
+        }
+
+        return totalHeight + border;
+      } else {
+        // Horizontal menu - height is 1 line
+        return 1 + (padding * 2) + border;
+      }
+    }
+
     // For containers (Stack, Box, Screen, etc.), calculate based on children
     if (node.children.length > 0 && ['flexbox', 'grid', 'absolute'].includes(node.layout.type)) {
       const padding = typeof node.layout.padding === 'number' ? node.layout.padding : 0;

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { COMPONENT_LIBRARY, CATEGORIES, getComponentsByCategory } from '../../constants/components';
-import { useComponentStore } from '../../stores';
+import { useComponentStore, useSelectionStore } from '../../stores';
 import type { ComponentNode } from '../../types';
 import { dragStore } from '../../hooks/useDragAndDrop';
 

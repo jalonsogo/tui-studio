@@ -62,13 +62,19 @@ export function LayoutEditor({ component }: LayoutEditorProps) {
           <div>
             <label className="text-sm font-medium mb-2 block">Direction</label>
             <select
-              value={component.layout.direction}
+              value={component.type === 'List' ? 'column' : component.layout.direction}
               onChange={(e) => handleUpdate({ direction: e.target.value as any })}
-              className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm"
+              disabled={component.type === 'List'}
+              className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="row">Row (→)</option>
               <option value="column">Column (↓)</option>
             </select>
+            {component.type === 'List' && (
+              <div className="text-xs text-muted-foreground mt-1">
+                Lists are always vertical
+              </div>
+            )}
           </div>
 
           <div>
