@@ -1,4 +1,4 @@
-# Gliph
+# TUIStudio
 
 **Visual design tool for building Terminal User Interfaces**
 
@@ -7,7 +7,7 @@
 
 A Figma-like visual editor for designing and building Terminal User Interface applications. Design with drag-and-drop, see live preview, export to multiple TUI frameworks.
 
-<img width="800" alt="Gliph - TUI Designer" src="https://via.placeholder.com/800x450/1a1a1a/00ff00?text=Gliph+TUI+Designer" />
+<img width="800" alt="TUIStudio - TUI Designer" src="https://via.placeholder.com/800x450/1a1a1a/00ff00?text=TUIStudio+TUI+Designer" />
 
 ## ✨ Features (Planned)
 
@@ -45,8 +45,8 @@ Enable developers to build beautiful Terminal UIs as easily as designing web UIs
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/gliph.git
-cd gliph
+git clone https://github.com/jalonsogo/tui-studio.git
+cd tuistudio
 
 # Install dependencies
 npm install
@@ -70,7 +70,7 @@ npm run dev
 ## 📦 Project Structure
 
 ```
-gliph/
+tuistudio/
 ├── docs/                          # Documentation
 │   ├── TUI_DESIGNER_OVERVIEW.md
 │   ├── TUI_DESIGNER_IMPLEMENTATION_PLAN.md
@@ -168,8 +168,8 @@ If you find this project interesting, give it a star! ⭐
 
 ## 📧 Contact
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/gliph/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/gliph/discussions)
+- **Issues**: [GitHub Issues](https://github.com/jalonsogo/tui-studio/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/jalonsogo/tui-studio/discussions)
 - **Twitter**: [@yourusername](https://twitter.com/yourusername)
 
 ---

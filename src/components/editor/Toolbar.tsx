@@ -20,7 +20,7 @@ export function Toolbar() {
       <div className="h-14 px-4 flex items-center justify-between bg-card">
         {/* Left - Logo/Title */}
         <div className="flex items-center gap-4">
-          <h1 className="text-lg font-bold">Gliph</h1>
+          <h1 className="text-lg font-bold">TUIStudio</h1>
           <div className="text-sm text-muted-foreground">
             Terminal UI Design Tool
           </div>
