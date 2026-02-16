@@ -39,7 +39,7 @@ import { dragStore } from '../../hooks/useDragAndDrop';
 import { COMPONENT_LIBRARY, canHaveChildren } from '../../constants/components';
 
 // Map component types to their icons
-function getComponentIcon(type: ComponentType) {
+export function getComponentIcon(type: ComponentType) {
   const iconProps = { className: 'w-3.5 h-3.5 flex-shrink-0' };
 
   switch (type) {

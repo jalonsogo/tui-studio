@@ -16,6 +16,7 @@ import { ComponentType } from '../../types';
 import { dragStore } from '../../hooks/useDragAndDrop';
 import { useComponentStore, useSelectionStore } from '../../stores';
 import { COMPONENT_LIBRARY } from '../../constants/components';
+import { getComponentIcon } from './ComponentTree';
 
 type ToolbarPosition = 'TL' | 'T' | 'TR' | 'BL' | 'B' | 'BR' | 'custom';
 
@@ -456,7 +457,10 @@ export function ComponentToolbar({ docked = false }: ComponentToolbarProps) {
                         }}
                         className="w-full flex items-center justify-between px-3 py-1.5 hover:bg-accent transition-colors text-left group"
                       >
-                        <span className="text-xs">{item.label}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground">{getComponentIcon(item.type)}</span>
+                          <span className="text-xs">{item.label}</span>
+                        </div>
                         {item.hotkey && (
                           <span className="text-[10px] text-muted-foreground group-hover:text-foreground ml-4">
                             {item.hotkey}
@@ -571,7 +575,10 @@ export function ComponentToolbar({ docked = false }: ComponentToolbarProps) {
                         }}
                         className="w-full flex items-center justify-between px-3 py-1.5 hover:bg-accent transition-colors text-left group"
                       >
-                        <span className="text-xs">{item.label}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground">{getComponentIcon(item.type)}</span>
+                          <span className="text-xs">{item.label}</span>
+                        </div>
                         {item.hotkey && (
                           <span className="text-[10px] text-muted-foreground group-hover:text-foreground ml-4">
                             {item.hotkey}
