@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { ComponentType } from '../../types';
 import { dragStore } from '../../hooks/useDragAndDrop';
+import { useComponentStore, useSelectionStore } from '../../stores';
+import { COMPONENT_LIBRARY } from '../../constants/components';
 
 type ToolbarPosition = 'TL' | 'T' | 'TR' | 'BL' | 'B' | 'BR' | 'custom';
 
@@ -60,10 +62,10 @@ const COMPONENT_GROUPS: ComponentGroup[] = [
     icon: LayoutGrid,
     items: [
       { type: 'Flexbox', label: 'Flexbox', hotkey: 'F' },
-      { type: 'Box', label: 'Box', hotkey: 'B' },
+      { type: 'Box', label: 'Box', hotkey: 'X' },
       { type: 'Grid', label: 'Grid', hotkey: 'G' },
       { type: 'Stack', label: 'Stack', hotkey: 'S' },
-      { type: 'Spacer', label: 'Spacer' },
+      { type: 'Spacer', label: 'Spacer', hotkey: 'J' },
     ],
   },
   {
@@ -75,8 +77,8 @@ const COMPONENT_GROUPS: ComponentGroup[] = [
       { type: 'TextInput', label: 'Text Input', hotkey: 'I' },
       { type: 'Checkbox', label: 'Checkbox', hotkey: 'K' },
       { type: 'Radio', label: 'Radio', hotkey: 'R' },
-      { type: 'Select', label: 'Select' },
-      { type: 'Toggle', label: 'Toggle' },
+      { type: 'Select', label: 'Select', hotkey: 'D' },
+      { type: 'Toggle', label: 'Toggle', hotkey: 'E' },
     ],
   },
   {
@@ -84,10 +86,10 @@ const COMPONENT_GROUPS: ComponentGroup[] = [
     name: 'Display',
     icon: Eye,
     items: [
-      { type: 'Text', label: 'Text', hotkey: 'T' },
+      { type: 'Text', label: 'Text', hotkey: 'Y' },
       { type: 'Label', label: 'Label', hotkey: 'L' },
-      { type: 'Badge', label: 'Badge' },
-      { type: 'Spinner', label: 'Spinner' },
+      { type: 'Badge', label: 'Badge', hotkey: 'W' },
+      { type: 'Spinner', label: 'Spinner', hotkey: 'N' },
       { type: 'ProgressBar', label: 'Progress Bar', hotkey: 'P' },
     ],
   },
@@ -98,7 +100,7 @@ const COMPONENT_GROUPS: ComponentGroup[] = [
     items: [
       { type: 'Table', label: 'Table', hotkey: 'A' },
       { type: 'List', label: 'List', hotkey: 'U' },
-      { type: 'Tree', label: 'Tree' },
+      { type: 'Tree', label: 'Tree', hotkey: 'Z' },
     ],
   },
   {
@@ -107,8 +109,8 @@ const COMPONENT_GROUPS: ComponentGroup[] = [
     icon: MenuIcon,
     items: [
       { type: 'Menu', label: 'Menu', hotkey: 'M' },
-      { type: 'Tabs', label: 'Tabs', hotkey: 'Tab' },
-      { type: 'Breadcrumb', label: 'Breadcrumb' },
+      { type: 'Tabs', label: 'Tabs', hotkey: 'T' },
+      { type: 'Breadcrumb', label: 'Breadcrumb', hotkey: 'C' },
     ],
   },
   {
@@ -117,8 +119,8 @@ const COMPONENT_GROUPS: ComponentGroup[] = [
     icon: Layers,
     items: [
       { type: 'Modal', label: 'Modal', hotkey: 'O' },
-      { type: 'Popover', label: 'Popover' },
-      { type: 'Tooltip', label: 'Tooltip' },
+      { type: 'Popover', label: 'Popover', hotkey: 'V' },
+      { type: 'Tooltip', label: 'Tooltip', hotkey: 'H' },
     ],
   },
 ];
@@ -128,6 +130,8 @@ interface ComponentToolbarProps {
 }
 
 export function ComponentToolbar({ docked = false }: ComponentToolbarProps) {
+  const componentStore = useComponentStore();
+  const selectionStore = useSelectionStore();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
   const [position, setPosition] = useState<ToolbarPosition>('B');
@@ -178,7 +182,8 @@ export function ComponentToolbar({ docked = false }: ComponentToolbarProps) {
         for (const item of group.items) {
           if (item.hotkey === e.key.toUpperCase() || item.hotkey?.toLowerCase() === e.key) {
             e.preventDefault();
-            handleComponentClick(item.type, group.id);
+            // Add component directly via keyboard shortcut
+            addComponentDirectly(item.type, group.id);
             return;
           }
         }
@@ -261,6 +266,70 @@ export function ComponentToolbar({ docked = false }: ComponentToolbarProps) {
     });
 
     // Show visual feedback that component is selected
+    setTimeout(() => setActiveGroup(null), 500);
+  };
+
+  // Add component directly (for keyboard shortcuts)
+  const addComponentDirectly = (type: ComponentType, groupId: string) => {
+    setActiveGroup(groupId);
+
+    const root = componentStore.root;
+    let parentId = root?.id;
+
+    // Create root if it doesn't exist
+    if (!parentId) {
+      const newRoot: import('../../types').ComponentNode = {
+        id: 'root',
+        type: 'Screen',
+        name: 'Main Screen',
+        props: { width: 80, height: 24, theme: 'dracula' },
+        layout: {
+          type: 'absolute',
+        },
+        style: {
+          border: false,
+        },
+        events: {},
+        children: [],
+        locked: false,
+        hidden: false,
+        collapsed: false,
+      };
+      componentStore.setRoot(newRoot);
+      parentId = 'root';
+    }
+
+    const def = COMPONENT_LIBRARY[type];
+    if (def) {
+      // Calculate position with offset so components don't stack
+      const existingChildren = root?.children.length || 0;
+      const offsetX = existingChildren * 2;
+      const offsetY = existingChildren * 2;
+
+      const newComponent: Omit<import('../../types').ComponentNode, 'id'> = {
+        type: def.type,
+        name: def.name,
+        props: { ...def.defaultProps },
+        layout: {
+          ...def.defaultLayout,
+          x: offsetX,
+          y: offsetY,
+        },
+        style: { ...def.defaultStyle },
+        events: { ...def.defaultEvents },
+        children: [],
+        locked: false,
+        hidden: false,
+        collapsed: false,
+      };
+
+      const id = componentStore.addComponent(parentId, newComponent);
+      if (id) {
+        selectionStore.select(id);
+      }
+    }
+
+    // Show visual feedback
     setTimeout(() => setActiveGroup(null), 500);
   };
 
