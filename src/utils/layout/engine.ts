@@ -73,8 +73,14 @@ export class LayoutEngine {
 
     if (typeof node.props.height === 'number') {
       height = node.props.height;
+      if (node.type === 'Box') {
+        console.log(`[Layout] ${node.type} "${node.name}" has explicit height:`, height);
+      }
     } else if (node.props.height === 'auto') {
       height = this.calculateAutoHeight(node);
+      if (node.type === 'Box') {
+        console.log(`[Layout] ${node.type} "${node.name}" using auto height:`, height);
+      }
     }
 
     // Apply margin
@@ -434,7 +440,15 @@ export class LayoutEngine {
           maxHeight = Math.max(maxHeight, childHeight);
         });
 
-        return maxHeight + (padding * 2) + border;
+        const calculatedHeight = maxHeight + (padding * 2) + border;
+        console.log(`[Layout] Auto height for ${node.type} "${node.name}" (row):`, {
+          maxChildHeight: maxHeight,
+          padding: padding * 2,
+          border,
+          total: calculatedHeight,
+          childCount: node.children.length
+        });
+        return calculatedHeight;
       }
 
       // For other layouts, use a reasonable default
