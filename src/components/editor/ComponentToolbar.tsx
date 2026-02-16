@@ -349,15 +349,32 @@ export function ComponentToolbar({ docked = false }: ComponentToolbarProps) {
 
   // Determine if dropdown should open upward or downward
   const getDropdownPosition = (buttonRef: HTMLElement | null): 'top' | 'bottom' => {
-    if (!buttonRef) return 'top';
+    if (!buttonRef) return 'bottom';
 
     const rect = buttonRef.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
     const spaceBelow = viewportHeight - rect.bottom;
     const spaceAbove = rect.top;
 
-    // If not enough space below (less than 300px), and more space above, open upward
-    return spaceBelow < 300 && spaceAbove > spaceBelow ? 'top' : 'bottom';
+    const minSpaceNeeded = 200; // Minimum space needed for dropdown
+
+    // If not enough space below but enough space above, open upward
+    if (spaceBelow < minSpaceNeeded && spaceAbove >= minSpaceNeeded) {
+      return 'top';
+    }
+
+    // If not enough space above but enough space below, open downward
+    if (spaceAbove < minSpaceNeeded && spaceBelow >= minSpaceNeeded) {
+      return 'bottom';
+    }
+
+    // If both have enough space, prefer below (default)
+    if (spaceBelow >= minSpaceNeeded) {
+      return 'bottom';
+    }
+
+    // If neither has enough space, use the one with more space
+    return spaceAbove > spaceBelow ? 'top' : 'bottom';
   };
 
   const handlePresetPosition = (pos: Exclude<ToolbarPosition, 'custom'>) => {
@@ -422,7 +439,7 @@ export function ComponentToolbar({ docked = false }: ComponentToolbarProps) {
             >
               {/* Dropdown Menu */}
               {isOpen && (
-                <div className={`absolute left-0 min-w-[180px] bg-card border border-border rounded-lg shadow-xl overflow-hidden z-50 ${
+                <div className={`absolute left-0 min-w-[180px] bg-card border border-border rounded-lg shadow-xl overflow-hidden z-50 max-h-[400px] overflow-y-auto ${
                   dropdownPosition === 'above' ? 'bottom-full mb-2' : 'top-full mt-2'
                 }`}>
                   <div className="py-1">
@@ -478,7 +495,7 @@ export function ComponentToolbar({ docked = false }: ComponentToolbarProps) {
         {/* Settings for docked mode */}
         <div className="relative ml-1 pl-2 border-l border-border" ref={settingsRef}>
           {showSettings && (
-            <div className={`absolute left-0 min-w-[160px] bg-card border border-border rounded-lg shadow-xl overflow-hidden z-50 ${
+            <div className={`absolute left-0 min-w-[160px] bg-card border border-border rounded-lg shadow-xl overflow-hidden z-50 max-h-[400px] overflow-y-auto ${
               dropdownPosition === 'above' ? 'bottom-full mb-2' : 'top-full mt-2'
             }`}>
               <div className="py-1">
