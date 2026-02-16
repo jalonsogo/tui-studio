@@ -1,6 +1,6 @@
 // Figma-style component toolbar with grouped components and hotkeys
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   LayoutGrid,
   TextCursorInput,
@@ -192,7 +192,7 @@ export function ComponentToolbar({ docked = false }: ComponentToolbarProps) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [addComponentDirectly]);
 
   // Handle drag to reposition
   const handleDragStart = (e: React.MouseEvent) => {
@@ -270,7 +270,7 @@ export function ComponentToolbar({ docked = false }: ComponentToolbarProps) {
   };
 
   // Add component directly (for keyboard shortcuts)
-  const addComponentDirectly = (type: ComponentType, groupId: string) => {
+  const addComponentDirectly = useCallback((type: ComponentType, groupId: string) => {
     setActiveGroup(groupId);
 
     const root = componentStore.root;
@@ -331,7 +331,7 @@ export function ComponentToolbar({ docked = false }: ComponentToolbarProps) {
 
     // Show visual feedback
     setTimeout(() => setActiveGroup(null), 500);
-  };
+  }, [componentStore, selectionStore]);
 
   const handleGroupClick = (groupId: string) => {
     if (openDropdown === groupId) {
