@@ -1097,21 +1097,30 @@ function ComponentRenderer({ node, cellWidth, cellHeight, zoom }: ComponentRende
         }}
       >
         {hasBorder ? (
-          <div className="font-mono">
+          <div className="font-mono leading-none">
             {/* Top border */}
             <div>
               {chars.tl}
               {chars.h.repeat(Math.max(0, layout.width - 2))}
               {chars.tr}
             </div>
-            {/* Content - pad with spaces to match border width */}
-            <div>
-              {chars.v}
-              <span className={node.type === 'Button' ? 'font-bold' : ''}>
-                {padText(getTextContent(), layout.width - 2, 'center')}
-              </span>
-              {chars.v}
-            </div>
+            {/* Content rows - render multiple rows for container height */}
+            {Array.from({ length: Math.max(1, layout.height - 2) }).map((_, i) => {
+              const content = getTextContent();
+              const isContentRow = i === Math.floor((layout.height - 2) / 2) && content;
+
+              return (
+                <div key={i}>
+                  {chars.v}
+                  <span className={node.type === 'Button' ? 'font-bold' : ''}>
+                    {isContentRow
+                      ? padText(content, layout.width - 2, 'center')
+                      : ' '.repeat(Math.max(0, layout.width - 2))}
+                  </span>
+                  {chars.v}
+                </div>
+              );
+            })}
             {/* Bottom border */}
             <div>
               {chars.bl}
