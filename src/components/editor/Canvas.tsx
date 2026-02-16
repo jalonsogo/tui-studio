@@ -614,6 +614,14 @@ function ComponentRenderer({ node, cellWidth, cellHeight, zoom }: ComponentRende
 
         return items.map((item, i) => renderTreeItem(item, 0, i === items.length - 1, '')).join('').trim();
       }
+      // Container components (Box, Flexbox, Grid, Stack, Spacer, Screen)
+      case 'Box':
+      case 'Flexbox':
+      case 'Grid':
+      case 'Stack':
+      case 'Spacer':
+      case 'Screen':
+        return ''; // Containers should be empty - they hold children
       default:
         return node.type;
     }
