@@ -1,29 +1,35 @@
 // Save and open .tui files
-// Must be called directly from a user gesture (click/keydown) — not via
-// window.dispatchEvent — so that showSaveFilePicker / showOpenFilePicker
-// can obtain the required browser user-activation token.
 
 import { useComponentStore } from '../stores/componentStore';
 import { useThemeStore } from '../stores/themeStore';
 import { useSelectionStore } from '../stores/selectionStore';
 
-export async function saveTuiFile(): Promise<void> {
+/** Build the JSON payload + suggested filename from current store state. */
+export function buildTuiData(): { json: string; suggestedName: string } | null {
   const root = useComponentStore.getState().root;
-  if (!root) return;
-
+  if (!root) return null;
   const theme = useThemeStore.getState().currentTheme;
   const data = {
     version: '1',
     meta: { name: root.name, theme, savedAt: new Date().toISOString() },
     tree: root,
   };
-  const json = JSON.stringify(data, null, 2);
-  const suggestedName = `${root.name.toLowerCase().replace(/\s+/g, '-')}.tui`;
+  return {
+    json: JSON.stringify(data, null, 2),
+    suggestedName: `${root.name.toLowerCase().replace(/\s+/g, '-')}.tui`,
+  };
+}
 
+/**
+ * Save a JSON payload to disk.
+ * Must be called directly from a button click so showSaveFilePicker can get
+ * the browser's user-activation token. Falls back to a plain download.
+ */
+export async function saveTuiData(json: string, filename: string): Promise<void> {
   if ('showSaveFilePicker' in window) {
     try {
       const fileHandle = await (window as any).showSaveFilePicker({
-        suggestedName,
+        suggestedName: filename,
         types: [{ description: 'TUI Studio File', accept: { 'application/json': ['.tui'] } }],
       });
       const writable = await fileHandle.createWritable();
@@ -32,15 +38,15 @@ export async function saveTuiFile(): Promise<void> {
       return;
     } catch (err) {
       if ((err as Error).name === 'AbortError') return;
+      // fall through to download on unexpected errors
     }
   }
-
-  // Fallback: browser download
+  // Fallback: trigger browser download
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = suggestedName;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

@@ -8,7 +8,7 @@ import { Canvas } from './components/editor/Canvas';
 import { PropertyPanel } from './components/properties/PropertyPanel';
 import { CommandPalette } from './components/editor/CommandPalette';
 import { useComponentStore, useSelectionStore } from './stores';
-import { saveTuiFile, openTuiFile } from './utils/fileOps';
+import { openTuiFile } from './utils/fileOps';
 import { COMPONENT_LIBRARY } from './constants/components';
 import type { ComponentType } from './types';
 
@@ -123,10 +123,10 @@ function App() {
         return;
       }
 
-      // Save (Ctrl/Cmd+S)
+      // Save (Ctrl/Cmd+S) — open the save dialog (dialog's button preserves user gesture for showSaveFilePicker)
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault();
-        saveTuiFile();
+        window.dispatchEvent(new Event('open-save-dialog'));
         return;
       }
 

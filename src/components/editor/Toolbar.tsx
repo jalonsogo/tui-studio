@@ -6,7 +6,55 @@ import { useComponentStore, useCanvasStore, useThemeStore } from '../../stores';
 import { ExportModal } from '../export/ExportModal';
 import { THEME_NAMES } from '../../stores/themeStore';
 import { ComponentToolbar } from './ComponentToolbar';
-import { saveTuiFile, openTuiFile } from '../../utils/fileOps';
+import { buildTuiData, saveTuiData, openTuiFile } from '../../utils/fileOps';
+
+// ── Save dialog ───────────────────────────────────────────────────────────────
+
+function SaveDialog({ onClose }: { onClose: () => void }) {
+  const initial = buildTuiData();
+  const [filename, setFilename] = useState(initial?.suggestedName ?? 'untitled.tui');
+  const json = initial?.json ?? '';
+
+  const handleSave = async () => {
+    const name = filename.trim() || 'untitled.tui';
+    await saveTuiData(json, name.endsWith('.tui') ? name : name + '.tui');
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div
+        className="bg-card border border-border rounded-xl shadow-2xl p-6 w-96"
+        onClick={e => e.stopPropagation()}
+      >
+        <h2 className="text-sm font-semibold mb-4">Save File</h2>
+        <label className="block text-xs text-muted-foreground mb-1">File name</label>
+        <input
+          autoFocus
+          value={filename}
+          onChange={e => setFilename(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') onClose(); }}
+          className="w-full px-3 py-1.5 bg-input border border-border rounded-lg text-sm focus:border-primary focus:outline-none mb-4"
+        />
+        {'showSaveFilePicker' in window
+          ? <p className="text-[11px] text-muted-foreground mb-4">A folder picker will open next.</p>
+          : <p className="text-[11px] text-muted-foreground mb-4">The file will be saved to your Downloads folder.</p>
+        }
+        <div className="flex justify-end gap-2">
+          <button onClick={onClose} className="px-3 py-1.5 text-sm hover:bg-accent rounded-lg transition-colors">
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-3 py-1.5 text-sm bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg font-medium transition-colors"
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ── App menu (chevron dropdown next to logo) ─────────────────────────────────
 
@@ -48,7 +96,7 @@ function AppMenu() {
         label: 'File',
         submenu: [
           { label: 'Open',   shortcut: `${mod}O`, action: () => { close(); openTuiFile(); } },
-          { label: 'Save',   shortcut: `${mod}S`, action: () => { close(); saveTuiFile(); } },
+          { label: 'Save',   shortcut: `${mod}S`, action: () => { close(); window.dispatchEvent(new Event('open-save-dialog')); } },
           { label: 'Export', shortcut: `${mod}E`, action: () => dispatch('command-export') },
         ],
       },
@@ -138,6 +186,7 @@ export function Toolbar() {
   const canvasStore = useCanvasStore();
   const themeStore = useThemeStore();
   const [exportOpen, setExportOpen] = useState(false);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [isToolbarDocked, setIsToolbarDocked] = useState(() =>
     JSON.parse(localStorage.getItem('toolbar-docked') || 'false')
   );
@@ -152,6 +201,13 @@ export function Toolbar() {
     };
     window.addEventListener('toolbar-docked-changed', handleDockedChange);
     return () => window.removeEventListener('toolbar-docked-changed', handleDockedChange);
+  }, []);
+
+  // Listen for save dialog trigger (e.g. from Cmd+S keyboard shortcut)
+  useEffect(() => {
+    const handler = () => setSaveDialogOpen(true);
+    window.addEventListener('open-save-dialog', handler);
+    return () => window.removeEventListener('open-save-dialog', handler);
   }, []);
 
   return (
@@ -271,7 +327,7 @@ export function Toolbar() {
       {/* Right - Actions */}
       <div className="flex items-center gap-2">
         <button
-          onClick={() => saveTuiFile()}
+          onClick={() => setSaveDialogOpen(true)}
           className="px-3 py-2 text-sm hover:bg-accent rounded-lg flex items-center gap-2 transition-colors"
           title="Save (Cmd+S)"
         >
@@ -290,6 +346,9 @@ export function Toolbar() {
 
       {/* Export Modal */}
       <ExportModal isOpen={exportOpen} onClose={() => setExportOpen(false)} />
+
+      {/* Save Dialog */}
+      {saveDialogOpen && <SaveDialog onClose={() => setSaveDialogOpen(false)} />}
     </>
   );
 }
