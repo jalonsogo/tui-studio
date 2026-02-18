@@ -141,7 +141,11 @@ export function Toolbar() {
 
       {/* Right - Actions */}
       <div className="flex items-center gap-2">
-        <button className="px-3 py-2 text-sm hover:bg-accent rounded-lg flex items-center gap-2 transition-colors">
+        <button
+          onClick={() => window.dispatchEvent(new Event('command-save'))}
+          className="px-3 py-2 text-sm hover:bg-accent rounded-lg flex items-center gap-2 transition-colors"
+          title="Save (Cmd+S)"
+        >
           <Save className="w-4 h-4" />
           <span className="font-medium">Save</span>
         </button>

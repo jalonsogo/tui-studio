@@ -7,7 +7,7 @@ import { LeftSidebar } from './components/editor/LeftSidebar';
 import { Canvas } from './components/editor/Canvas';
 import { PropertyPanel } from './components/properties/PropertyPanel';
 import { CommandPalette } from './components/editor/CommandPalette';
-import { useComponentStore, useSelectionStore } from './stores';
+import { useComponentStore, useSelectionStore, useThemeStore } from './stores';
 import { COMPONENT_LIBRARY } from './constants/components';
 import type { ComponentType } from './types';
 
@@ -43,6 +43,7 @@ function pasteTree(
 function App() {
   const componentStore = useComponentStore();
   const selectionStore = useSelectionStore();
+  const themeStore = useThemeStore();
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
   // Enable dark mode
@@ -198,7 +199,28 @@ function App() {
   // Listen for command events
   useEffect(() => {
     const handleSave = () => {
-      // TODO: Implement save functionality
+      const root = useComponentStore.getState().root;
+      if (!root) return;
+      const theme = useThemeStore.getState().currentTheme;
+      const data = {
+        version: '1',
+        meta: {
+          name: root.name,
+          theme,
+          savedAt: new Date().toISOString(),
+        },
+        tree: root,
+      };
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${root.name.toLowerCase().replace(/\s+/g, '-')}.tui`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     };
 
     const handleExport = () => {
