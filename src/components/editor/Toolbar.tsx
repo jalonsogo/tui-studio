@@ -157,13 +157,15 @@ export function Toolbar() {
     <>
       <div className="h-14 px-4 flex items-center justify-between bg-background border-b border-border">
         {/* Left - Logo/Title */}
-        <div className="flex items-center gap-2">
-          <img src="/tui-studio.svg" alt="TUIStudio" className="w-7 h-7" />
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-0.5">
+            <img src="/tui-studio.svg" alt="TUIStudio" className="w-7 h-7" />
+            <AppMenu />
+          </div>
           <div>
             <h1 className="text-sm font-semibold leading-none">TUIStudio</h1>
             <div className="text-[10px] text-muted-foreground mt-0.5">Terminal UI Design Tool</div>
           </div>
-          <AppMenu />
         </div>
 
       {/* Center - Tools */}
