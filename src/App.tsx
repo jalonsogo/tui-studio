@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { cloneNode } from './utils/treeUtils';
 import './App.css';
 import { EditorLayout } from './components/editor/EditorLayout';
 import { Toolbar } from './components/editor/Toolbar';
@@ -10,6 +11,35 @@ import { CommandPalette } from './components/editor/CommandPalette';
 import { useComponentStore, useSelectionStore } from './stores';
 import { COMPONENT_LIBRARY } from './constants/components';
 import type { ComponentType } from './types';
+
+// In-memory clipboard for component copy/paste
+let componentClipboard: import('./types').ComponentNode[] = [];
+
+// Recursively paste a component tree, returning the top-level new ID
+function pasteTree(
+  node: import('./types').ComponentNode,
+  parentId: string,
+  store: { addComponent: (parentId: string, c: Omit<import('./types').ComponentNode, 'id'>) => string },
+  offsetX = 0,
+  offsetY = 0,
+): string {
+  const { children, layout, ...rest } = node;
+  const newId = store.addComponent(parentId, {
+    ...rest,
+    layout: {
+      ...layout,
+      x: ((layout.x as number) ?? 0) + offsetX,
+      y: ((layout.y as number) ?? 0) + offsetY,
+    },
+    children: [],
+  });
+  if (newId && children.length > 0) {
+    for (const child of children) {
+      pasteTree(cloneNode(child), newId, store);
+    }
+  }
+  return newId || '';
+}
 
 function App() {
   const componentStore = useComponentStore();
@@ -53,6 +83,36 @@ function App() {
       if ((e.metaKey || e.ctrlKey) && e.key === 'p') {
         e.preventDefault();
         setCommandPaletteOpen(true);
+        return;
+      }
+
+      // Copy (Ctrl/Cmd+C) — copy selected components to in-memory clipboard
+      if ((e.metaKey || e.ctrlKey) && e.key === 'c' && !isTyping) {
+        const selectedIds = Array.from(selectionStore.selectedIds);
+        if (selectedIds.length > 0) {
+          e.preventDefault();
+          componentClipboard = selectedIds
+            .map((id) => componentStore.getComponent(id))
+            .filter((c): c is import('./types').ComponentNode => !!c && c.id !== 'root')
+            .map((c) => cloneNode(c));
+        }
+        return;
+      }
+
+      // Paste (Ctrl/Cmd+V) — paste clipboard components with a small offset
+      if ((e.metaKey || e.ctrlKey) && e.key === 'v' && !isTyping) {
+        if (componentClipboard.length > 0) {
+          e.preventDefault();
+          const root = componentStore.root;
+          const parentId = root?.id;
+          if (!parentId) return;
+          const newIds: string[] = [];
+          for (const original of componentClipboard) {
+            const id = pasteTree(cloneNode(original), parentId, componentStore, 2, 2);
+            if (id) newIds.push(id);
+          }
+          if (newIds.length === 1) selectionStore.select(newIds[0]);
+        }
         return;
       }
 
