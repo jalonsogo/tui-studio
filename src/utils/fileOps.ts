@@ -30,6 +30,7 @@ export async function saveTuiData(json: string, filename: string): Promise<void>
     try {
       const fileHandle = await (window as any).showSaveFilePicker({
         suggestedName: filename,
+        startIn: 'downloads',
         types: [{ description: 'TUI Studio File', accept: { 'application/json': ['.tui'] } }],
       });
       const writable = await fileHandle.createWritable();
