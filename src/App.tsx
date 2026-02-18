@@ -43,7 +43,6 @@ function pasteTree(
 function App() {
   const componentStore = useComponentStore();
   const selectionStore = useSelectionStore();
-  const themeStore = useThemeStore();
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
   // Enable dark mode
@@ -113,6 +112,13 @@ function App() {
           }
           if (newIds.length === 1) selectionStore.select(newIds[0]);
         }
+        return;
+      }
+
+      // Open (Ctrl/Cmd+O)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'o') {
+        e.preventDefault();
+        window.dispatchEvent(new Event('command-open'));
         return;
       }
 
@@ -255,14 +261,81 @@ function App() {
       // TODO: Implement settings modal
     };
 
+    const handleOpen = async () => {
+      const loadData = (text: string) => {
+        try {
+          const data = JSON.parse(text);
+          if (data.version === '1' && data.tree) {
+            useComponentStore.getState().setRoot(data.tree);
+            if (data.meta?.theme) {
+              useThemeStore.getState().setTheme(data.meta.theme);
+            }
+            useSelectionStore.getState().clearSelection();
+          }
+        } catch {
+          alert('Invalid .tui file');
+        }
+      };
+
+      if ('showOpenFilePicker' in window) {
+        try {
+          const [fileHandle] = await (window as any).showOpenFilePicker({
+            types: [{ description: 'TUI Studio File', accept: { 'application/json': ['.tui'] } }],
+            multiple: false,
+          });
+          const file = await fileHandle.getFile();
+          loadData(await file.text());
+        } catch (err) {
+          if ((err as Error).name !== 'AbortError') alert('Failed to open file');
+        }
+      } else {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.tui,application/json';
+        input.onchange = async () => {
+          const file = input.files?.[0];
+          if (file) loadData(await file.text());
+        };
+        input.click();
+      }
+    };
+
+    const handleCopy = () => {
+      const { selectedIds } = useSelectionStore.getState();
+      const store = useComponentStore.getState();
+      const copied = Array.from(selectedIds)
+        .map((id) => store.getComponent(id))
+        .filter((c): c is import('./types').ComponentNode => !!c && c.id !== 'root')
+        .map((c) => cloneNode(c));
+      if (copied.length > 0) componentClipboard = copied;
+    };
+
+    const handlePaste = () => {
+      if (componentClipboard.length === 0) return;
+      const root = useComponentStore.getState().root;
+      if (!root) return;
+      const newIds: string[] = [];
+      for (const original of componentClipboard) {
+        const id = pasteTree(cloneNode(original), root.id, useComponentStore.getState(), 2, 2);
+        if (id) newIds.push(id);
+      }
+      if (newIds.length === 1) useSelectionStore.getState().select(newIds[0]);
+    };
+
     window.addEventListener('command-save', handleSave);
     window.addEventListener('command-export', handleExport);
     window.addEventListener('command-settings', handleSettings);
+    window.addEventListener('command-open', handleOpen);
+    window.addEventListener('command-copy', handleCopy);
+    window.addEventListener('command-paste', handlePaste);
 
     return () => {
       window.removeEventListener('command-save', handleSave);
       window.removeEventListener('command-export', handleExport);
       window.removeEventListener('command-settings', handleSettings);
+      window.removeEventListener('command-open', handleOpen);
+      window.removeEventListener('command-copy', handleCopy);
+      window.removeEventListener('command-paste', handlePaste);
     };
   }, []);
 

@@ -1,11 +1,136 @@
 // Top toolbar with controls
 
-import { useState, useEffect } from 'react';
-import { Undo2, Redo2, ZoomIn, ZoomOut, Grid3x3, Save, Download, Palette, Search } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Undo2, Redo2, ZoomIn, ZoomOut, Grid3x3, Save, Download, Palette, Search, ChevronDown, ChevronRight } from 'lucide-react';
 import { useComponentStore, useCanvasStore, useThemeStore } from '../../stores';
 import { ExportModal } from '../export/ExportModal';
 import { THEME_NAMES } from '../../stores/themeStore';
 import { ComponentToolbar } from './ComponentToolbar';
+
+// ── App menu (chevron dropdown next to logo) ─────────────────────────────────
+
+const isMac = typeof navigator !== 'undefined' && /mac/i.test(navigator.platform);
+const mod = isMac ? '⌘' : 'Ctrl+';
+
+function AppMenu() {
+  const [open, setOpen] = useState(false);
+  const [hovered, setHovered] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setHovered(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const close = () => { setOpen(false); setHovered(null); };
+
+  const dispatch = (event: string) => { close(); window.dispatchEvent(new Event(event)); };
+
+  const groups: Array<Array<{
+    label: string;
+    shortcut?: string;
+    action?: () => void;
+    submenu?: Array<{ label: string; shortcut?: string; action: () => void }>;
+  }>> = [
+    [
+      { label: 'Command Palette', shortcut: `${mod}P`, action: () => dispatch('open-command-palette') },
+    ],
+    [
+      {
+        label: 'File',
+        submenu: [
+          { label: 'Open',   shortcut: `${mod}O`, action: () => dispatch('command-open') },
+          { label: 'Save',   shortcut: `${mod}S`, action: () => dispatch('command-save') },
+          { label: 'Export', shortcut: `${mod}E`, action: () => dispatch('command-export') },
+        ],
+      },
+      {
+        label: 'Edit',
+        submenu: [
+          { label: 'Copy',  shortcut: `${mod}C`, action: () => dispatch('command-copy') },
+          { label: 'Paste', shortcut: `${mod}V`, action: () => dispatch('command-paste') },
+        ],
+      },
+    ],
+    [
+      {
+        label: 'Help',
+        submenu: [
+          { label: 'About', action: () => dispatch('command-about') },
+        ],
+      },
+    ],
+  ];
+
+  return (
+    <div className="relative" ref={menuRef}>
+      {/* Trigger */}
+      <button
+        onClick={() => { setOpen(o => !o); setHovered(null); }}
+        className={`flex items-center p-1 rounded transition-colors ${open ? 'bg-accent' : 'hover:bg-accent'}`}
+        title="Menu"
+      >
+        <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+      </button>
+
+      {/* Dropdown */}
+      {open && (
+        <div className="absolute top-full left-0 mt-1 w-56 bg-popover border border-border rounded-lg shadow-2xl py-1 z-50 text-sm">
+          {groups.map((group, gi) => (
+            <div key={gi}>
+              {gi > 0 && <div className="my-1 border-t border-border/40" />}
+              {group.map((item) =>
+                item.submenu ? (
+                  <div
+                    key={item.label}
+                    className="relative"
+                    onMouseEnter={() => setHovered(item.label)}
+                    onMouseLeave={() => setHovered(null)}
+                  >
+                    <div className={`flex items-center justify-between px-3 py-1.5 cursor-default transition-colors ${hovered === item.label ? 'bg-accent' : 'hover:bg-accent'}`}>
+                      <span>{item.label}</span>
+                      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                    </div>
+                    {hovered === item.label && (
+                      <div className="absolute left-full top-0 w-48 bg-popover border border-border rounded-lg shadow-2xl py-1 z-50">
+                        {item.submenu.map((sub) => (
+                          <button
+                            key={sub.label}
+                            onClick={sub.action}
+                            className="w-full flex items-center justify-between px-3 py-1.5 hover:bg-accent transition-colors text-left"
+                          >
+                            <span>{sub.label}</span>
+                            {sub.shortcut && <span className="text-xs text-muted-foreground">{sub.shortcut}</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    key={item.label}
+                    onClick={item.action}
+                    className="w-full flex items-center justify-between px-3 py-1.5 hover:bg-accent transition-colors text-left"
+                  >
+                    <span>{item.label}</span>
+                    {item.shortcut && <span className="text-xs text-muted-foreground">{item.shortcut}</span>}
+                  </button>
+                )
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function Toolbar() {
   const componentStore = useComponentStore();
@@ -32,12 +157,13 @@ export function Toolbar() {
     <>
       <div className="h-14 px-4 flex items-center justify-between bg-background border-b border-border">
         {/* Left - Logo/Title */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <img src="/tui-studio.svg" alt="TUIStudio" className="w-7 h-7" />
           <div>
             <h1 className="text-sm font-semibold leading-none">TUIStudio</h1>
             <div className="text-[10px] text-muted-foreground mt-0.5">Terminal UI Design Tool</div>
           </div>
+          <AppMenu />
         </div>
 
       {/* Center - Tools */}
