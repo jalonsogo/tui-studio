@@ -46,6 +46,7 @@ function Section({
 export function PropertyPanel() {
   const selectionStore = useSelectionStore();
   const componentStore = useComponentStore();
+  const [activeTab, setActiveTab] = useState<'visual' | 'content'>('visual');
 
   const selectedComponents = selectionStore.getSelectedComponents();
   const selectedComponent = selectedComponents[0];
@@ -89,16 +90,44 @@ export function PropertyPanel() {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex border-b border-border/30">
+        <button
+          onClick={() => setActiveTab('visual')}
+          className={`flex-1 px-3 py-1.5 text-[11px] font-medium transition-colors ${
+            activeTab === 'visual'
+              ? 'text-foreground border-b-2 border-primary'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Visual
+        </button>
+        <button
+          onClick={() => setActiveTab('content')}
+          className={`flex-1 px-3 py-1.5 text-[11px] font-medium transition-colors ${
+            activeTab === 'content'
+              ? 'text-foreground border-b-2 border-primary'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Content
+        </button>
+      </div>
+
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
-        <PropertiesContent component={selectedComponent} />
+        {activeTab === 'visual' ? (
+          <VisualProperties component={selectedComponent} />
+        ) : (
+          <ContentProperties component={selectedComponent} />
+        )}
       </div>
     </div>
   );
 }
 
-// Compact properties content with collapsible sections
-function PropertiesContent({ component }: { component: import('../../types').ComponentNode }) {
+// Visual properties tab (dimensions, layout, appearance)
+function VisualProperties({ component }: { component: import('../../types').ComponentNode }) {
   const componentStore = useComponentStore();
 
   return (
@@ -144,12 +173,20 @@ function PropertiesContent({ component }: { component: import('../../types').Com
       <Section title="Appearance" defaultOpen={true}>
         <StyleEditor component={component} />
       </Section>
-
-      {/* Component-specific properties */}
-      <Section title="Properties" defaultOpen={true}>
-        <ComponentProps component={component} />
-      </Section>
     </>
+  );
+}
+
+// Content properties tab (component-specific content)
+function ContentProperties({ component }: { component: import('../../types').ComponentNode }) {
+  if (!component) {
+    return <div className="p-3 text-muted-foreground">No component selected</div>;
+  }
+
+  return (
+    <div className="p-3">
+      <ComponentProps component={component} />
+    </div>
   );
 }
 
@@ -157,8 +194,10 @@ function PropertiesContent({ component }: { component: import('../../types').Com
 function ComponentProps({ component }: { component: import('../../types').ComponentNode }) {
   const componentStore = useComponentStore();
 
+  console.log('ComponentProps rendering for:', component.type);
+
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-3">
       {/* Text Content */}
       {component.type === 'Text' && (
         <div>
@@ -395,18 +434,173 @@ function ComponentProps({ component }: { component: import('../../types').Compon
             />
           </div>
           <div>
-            <label className="text-[9px] text-muted-foreground block mb-0.5 uppercase tracking-wide">Options (comma separated)</label>
-            <input
-              type="text"
-              value={((component.props.options as string[]) || []).join(', ')}
-              onChange={(e) =>
-                componentStore.updateProps(component.id, { options: e.target.value.split(',').map(s => s.trim()) })
+            <label className="text-[9px] text-muted-foreground block mb-0.5 uppercase tracking-wide">Options (one per line)</label>
+            <textarea
+              value={
+                Array.isArray(component.props.options)
+                  ? (component.props.options as string[]).join('\n')
+                  : ''
               }
-              className="w-full px-1.5 py-0.5 bg-input border border-border/50 rounded text-[11px] focus:border-primary focus:outline-none"
-              placeholder="Option 1, Option 2, Option 3"
+              onChange={(e) =>
+                componentStore.updateProps(component.id, {
+                  options: e.target.value.split('\n').filter((s) => s.trim()),
+                })
+              }
+              rows={5}
+              placeholder="Option 1&#10;Option 2&#10;Option 3"
+              className="w-full px-2 py-1 bg-input border border-border/50 rounded text-[11px] font-mono resize-none focus:border-primary focus:outline-none"
             />
           </div>
         </>
+      )}
+
+      {/* Tabs Properties */}
+      {component.type === 'Tabs' && (
+        <div className="space-y-3">
+          <label className="text-xs font-medium mb-1.5 block">Tabs</label>
+          {Array.isArray(component.props.tabs) &&
+            (component.props.tabs as any[]).map((tab, index) => {
+              const tabData = typeof tab === 'string' ? { label: tab, icon: '', status: false, hotkey: '' } : tab;
+
+              return (
+                <div key={index} className="p-2 bg-accent/50 rounded space-y-2">
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={tabData.label || ''}
+                      onChange={(e) => {
+                        const newTabs = [...(component.props.tabs as any[])];
+                        newTabs[index] = { ...tabData, label: e.target.value };
+                        componentStore.updateProps(component.id, { tabs: newTabs });
+                      }}
+                      className="flex-1 px-2 py-1 bg-secondary border border-border rounded text-xs"
+                      placeholder="Label"
+                    />
+                    <button
+                      onClick={() => {
+                        const newTabs = (component.props.tabs as any[]).filter((_, i) => i !== index);
+                        const activeTab = component.props.activeTab as number;
+                        const newActiveTab = activeTab >= newTabs.length ? Math.max(0, newTabs.length - 1) : activeTab;
+                        componentStore.updateProps(component.id, {
+                          tabs: newTabs,
+                          activeTab: newActiveTab,
+                        });
+                      }}
+                      className="px-2 py-1 bg-secondary hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-colors"
+                      title="Remove tab"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <div>
+                      <label className="text-[10px] text-muted-foreground mb-1 block">Icon</label>
+                      <input
+                        type="text"
+                        value={tabData.icon || ''}
+                        onChange={(e) => {
+                          const newTabs = [...(component.props.tabs as any[])];
+                          newTabs[index] = { ...tabData, icon: e.target.value };
+                          componentStore.updateProps(component.id, { tabs: newTabs });
+                        }}
+                        maxLength={3}
+                        className="w-full px-1.5 py-0.5 bg-secondary border border-border rounded text-xs text-center"
+                        placeholder="⌂"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] text-muted-foreground mb-1 block">Status</label>
+                      <div className="flex items-center justify-center h-6">
+                        <input
+                          type="checkbox"
+                          checked={tabData.status || false}
+                          onChange={(e) => {
+                            const newTabs = [...(component.props.tabs as any[])];
+                            newTabs[index] = { ...tabData, status: e.target.checked };
+                            componentStore.updateProps(component.id, { tabs: newTabs });
+                          }}
+                          className="w-3.5 h-3.5"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] text-muted-foreground mb-1 block">Hotkey</label>
+                      <input
+                        type="text"
+                        value={tabData.hotkey || ''}
+                        onChange={(e) => {
+                          const newTabs = [...(component.props.tabs as any[])];
+                          newTabs[index] = { ...tabData, hotkey: e.target.value };
+                          componentStore.updateProps(component.id, { tabs: newTabs });
+                        }}
+                        className="w-full px-1.5 py-0.5 bg-secondary border border-border rounded text-xs text-center font-mono"
+                        placeholder="^1"
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          <button
+            onClick={() => {
+              const currentTabs = (component.props.tabs as any[]) || [];
+              const newTabs = [...currentTabs, { label: `Tab ${currentTabs.length + 1}`, icon: '', status: false, hotkey: '' }];
+              componentStore.updateProps(component.id, { tabs: newTabs });
+            }}
+            className="w-full px-2 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded text-xs"
+          >
+            + Add Tab
+          </button>
+          <div>
+            <label className="text-xs font-medium mb-1.5 block">Active Tab</label>
+            <select
+              value={(component.props.activeTab as number) || 0}
+              onChange={(e) =>
+                componentStore.updateProps(component.id, {
+                  activeTab: parseInt(e.target.value),
+                })
+              }
+              className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs"
+            >
+              {Array.isArray(component.props.tabs) &&
+                (component.props.tabs as any[]).map((tab, index) => {
+                  const label = typeof tab === 'string' ? tab : tab.label || `Tab ${index + 1}`;
+                  return (
+                    <option key={index} value={index}>
+                      {label}
+                    </option>
+                  );
+                })}
+            </select>
+          </div>
+        </div>
+      )}
+
+      {/* Tree Properties */}
+      {component.type === 'Tree' && (
+        <div className="space-y-3">
+          <TreeItemsEditor
+            items={(component.props.items as any[]) || []}
+            onChange={(newItems) => {
+              componentStore.updateProps(component.id, { items: newItems });
+            }}
+            level={0}
+          />
+          <button
+            onClick={() => {
+              const currentItems = (component.props.items as any[]) || [];
+              componentStore.updateProps(component.id, {
+                items: [...currentItems, { label: 'Item', children: [] }],
+              });
+            }}
+            className="w-full px-2 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded text-xs"
+          >
+            + Add Item
+          </button>
+        </div>
       )}
     </div>
   );
@@ -1353,12 +1547,12 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
               <button
                 onClick={() => {
                   const currentItems = (component.props.items as any[]) || [];
-                  const newItems = [...currentItems, { label: `Root ${currentItems.length + 1}`, icon: '📁', expanded: false, children: [] }];
+                  const newItems = [...currentItems, { label: 'Item', children: [] }];
                   componentStore.updateProps(component.id, { items: newItems });
                 }}
                 className="w-full px-2 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded text-xs"
               >
-                + Add Root Item
+                + Add Item
               </button>
             </div>
           )}
@@ -1483,6 +1677,126 @@ function PropertiesTab({ component }: { component: import('../../types').Compone
                       );
                     })}
                 </select>
+              </div>
+            </div>
+          )}
+
+          {component.type === 'Table' && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs font-medium mb-1.5 block">Columns</label>
+                  <input
+                    type="number"
+                    value={(component.props.columns as string[])?.length || 2}
+                    onChange={(e) => {
+                      const newCount = Math.max(1, parseInt(e.target.value) || 2);
+                      const currentCols = (component.props.columns as string[]) || ['Column 1', 'Column 2'];
+                      const currentRows = (component.props.rows as string[][]) || [['Cell 1', 'Cell 2']];
+
+                      // Adjust columns array
+                      const newCols = [...currentCols];
+                      while (newCols.length < newCount) {
+                        newCols.push(`Column ${newCols.length + 1}`);
+                      }
+                      while (newCols.length > newCount) {
+                        newCols.pop();
+                      }
+
+                      // Adjust rows to match column count
+                      const newRows = currentRows.map(row => {
+                        const newRow = [...row];
+                        while (newRow.length < newCount) {
+                          newRow.push('');
+                        }
+                        while (newRow.length > newCount) {
+                          newRow.pop();
+                        }
+                        return newRow;
+                      });
+
+                      componentStore.updateProps(component.id, {
+                        columns: newCols,
+                        rows: newRows,
+                      });
+                    }}
+                    min={1}
+                    className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium mb-1.5 block">Rows</label>
+                  <input
+                    type="number"
+                    value={(component.props.rows as string[][])?.length || 2}
+                    onChange={(e) => {
+                      const newCount = Math.max(1, parseInt(e.target.value) || 2);
+                      const currentRows = (component.props.rows as string[][]) || [['Cell 1', 'Cell 2']];
+                      const colCount = (component.props.columns as string[])?.length || 2;
+
+                      const newRows = [...currentRows];
+                      while (newRows.length < newCount) {
+                        newRows.push(Array(colCount).fill(''));
+                      }
+                      while (newRows.length > newCount) {
+                        newRows.pop();
+                      }
+
+                      componentStore.updateProps(component.id, { rows: newRows });
+                    }}
+                    min={1}
+                    className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium mb-1.5 block">Column Headers</label>
+                <div className="space-y-1.5">
+                  {Array.isArray(component.props.columns) &&
+                    (component.props.columns as string[]).map((col, colIndex) => (
+                      <input
+                        key={colIndex}
+                        type="text"
+                        value={col}
+                        onChange={(e) => {
+                          const newCols = [...(component.props.columns as string[])];
+                          newCols[colIndex] = e.target.value;
+                          componentStore.updateProps(component.id, { columns: newCols });
+                        }}
+                        className="w-full px-2 py-1 bg-secondary border border-border rounded text-xs"
+                        placeholder={`Column ${colIndex + 1}`}
+                      />
+                    ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium mb-1.5 block">Table Data</label>
+                <div className="space-y-2">
+                  {Array.isArray(component.props.rows) &&
+                    (component.props.rows as string[][]).map((row, rowIndex) => (
+                      <div key={rowIndex} className="p-2 bg-accent/30 rounded space-y-1.5">
+                        <div className="text-[10px] text-muted-foreground font-semibold mb-1">
+                          Row {rowIndex + 1}
+                        </div>
+                        {row.map((cell, colIndex) => (
+                          <input
+                            key={colIndex}
+                            type="text"
+                            value={cell}
+                            onChange={(e) => {
+                              const newRows = [...(component.props.rows as string[][])];
+                              newRows[rowIndex][colIndex] = e.target.value;
+                              componentStore.updateProps(component.id, { rows: newRows });
+                            }}
+                            className="w-full px-2 py-1 bg-secondary border border-border rounded text-xs"
+                            placeholder={`Cell ${rowIndex + 1},${colIndex + 1}`}
+                          />
+                        ))}
+                      </div>
+                    ))}
+                </div>
               </div>
             </div>
           )}
@@ -1642,18 +1956,6 @@ function EventsTab({ component }: { component: import('../../types').ComponentNo
 
 // Tree Items Editor Component
 function TreeItemsEditor({ items, onChange, level }: { items: any[]; onChange: (items: any[]) => void; level: number }) {
-  const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
-
-  const toggleExpanded = (index: number) => {
-    const newExpanded = new Set(expandedItems);
-    if (newExpanded.has(index)) {
-      newExpanded.delete(index);
-    } else {
-      newExpanded.add(index);
-    }
-    setExpandedItems(newExpanded);
-  };
-
   const updateItem = (index: number, updates: any) => {
     const newItems = [...items];
     newItems[index] = { ...newItems[index], ...updates };
@@ -1661,8 +1963,7 @@ function TreeItemsEditor({ items, onChange, level }: { items: any[]; onChange: (
   };
 
   const removeItem = (index: number) => {
-    const newItems = items.filter((_, i) => i !== index);
-    onChange(newItems);
+    onChange(items.filter((_, i) => i !== index));
   };
 
   const addChild = (index: number) => {
@@ -1670,82 +1971,52 @@ function TreeItemsEditor({ items, onChange, level }: { items: any[]; onChange: (
     const children = newItems[index].children || [];
     newItems[index] = {
       ...newItems[index],
-      children: [...children, { label: `Child ${children.length + 1}`, icon: '📄', children: [] }],
-      expanded: true,
+      children: [...children, { label: 'Sub-Item', children: [] }],
     };
     onChange(newItems);
-    setExpandedItems(new Set(expandedItems).add(index));
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       {items.map((item, index) => {
-        const itemData = typeof item === 'string' ? { label: item, icon: '📄', children: [] } : item;
-        const isExpanded = expandedItems.has(index);
+        const itemData = typeof item === 'string' ? { label: item, children: [] } : item;
         const hasChildren = itemData.children && itemData.children.length > 0;
+        const isLast = index === items.length - 1;
 
         return (
-          <div key={index} style={{ marginLeft: `${level * 8}px` }}>
-            <div className="p-2 bg-accent/50 rounded space-y-2">
-              <div className="flex gap-2 items-center">
-                {hasChildren && (
-                  <button
-                    onClick={() => toggleExpanded(index)}
-                    className="px-1 text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    {isExpanded ? '▼' : '▶'}
-                  </button>
-                )}
-                <input
-                  type="text"
-                  value={itemData.label || ''}
-                  onChange={(e) => updateItem(index, { label: e.target.value })}
-                  className="flex-1 px-2 py-1 bg-secondary border border-border rounded text-xs"
-                  placeholder="Label"
-                />
-                <button
-                  onClick={() => removeItem(index)}
-                  className="px-2 py-1 bg-secondary hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-colors"
-                  title="Remove item"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
-              </div>
-
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <label className="text-[10px] text-muted-foreground mb-1 block">Icon</label>
-                  <input
-                    type="text"
-                    value={itemData.icon || ''}
-                    onChange={(e) => updateItem(index, { icon: e.target.value })}
-                    className="w-full px-2 py-1 bg-secondary border border-border rounded text-xs text-center"
-                    placeholder="📁"
-                  />
-                </div>
-                <div className="flex items-end">
-                  <button
-                    onClick={() => addChild(index)}
-                    className="px-2 py-1 bg-secondary hover:bg-accent text-xs rounded whitespace-nowrap"
-                    title="Add child"
-                  >
-                    + Child
-                  </button>
-                </div>
-              </div>
+          <div key={index} style={{ paddingLeft: `${level * 12}px` }}>
+            <div className="flex items-center gap-1">
+              <span className="font-mono text-[10px] text-muted-foreground select-none w-4 shrink-0">
+                {isLast ? '╰╼' : '├╼'}
+              </span>
+              <input
+                type="text"
+                value={itemData.label || ''}
+                onChange={(e) => updateItem(index, { label: e.target.value })}
+                className="flex-1 min-w-0 px-2 py-1 bg-secondary border border-border rounded text-xs"
+              />
+              <button
+                onClick={() => addChild(index)}
+                className="px-1.5 py-1 bg-secondary hover:bg-accent text-muted-foreground hover:text-foreground rounded text-[10px] font-mono shrink-0"
+                title="Add sub-item"
+              >
+                +╼
+              </button>
+              <button
+                onClick={() => removeItem(index)}
+                className="px-1.5 py-1 bg-secondary hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded shrink-0"
+                title="Remove"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
             </div>
 
-            {/* Render children recursively */}
-            {isExpanded && hasChildren && (
-              <div className="mt-2">
-                <TreeItemsEditor
-                  items={itemData.children}
-                  onChange={(newChildren) => {
-                    updateItem(index, { children: newChildren });
-                  }}
-                  level={level + 1}
-                />
-              </div>
+            {hasChildren && (
+              <TreeItemsEditor
+                items={itemData.children}
+                onChange={(newChildren) => updateItem(index, { children: newChildren })}
+                level={level + 1}
+              />
             )}
           </div>
         );

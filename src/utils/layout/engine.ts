@@ -83,6 +83,16 @@ export class LayoutEngine {
       }
     }
 
+    // Tabs always auto-sizes unless an explicit numeric dimension is set
+    if (node.type === 'Tabs') {
+      if (typeof node.props.width !== 'number') {
+        width = this.calculateAutoWidth(node);
+      }
+      if (typeof node.props.height !== 'number') {
+        height = this.calculateAutoHeight(node);
+      }
+    }
+
     // Apply margin
     const margin = typeof node.layout.margin === 'number' ? node.layout.margin : 0;
     const contentX = x + margin;
@@ -216,6 +226,25 @@ export class LayoutEngine {
   }
 
   private calculateAutoWidth(node: ComponentNode): number {
+    // For absolute positioned layouts, find the rightmost edge of all children
+    if (node.layout.type === 'absolute') {
+      const padding = typeof node.layout.padding === 'number' ? node.layout.padding : 0;
+      const border = node.style.border ? 2 : 0;
+
+      let maxRightEdge = 0;
+      node.children.forEach(child => {
+        const childX = typeof child.layout.x === 'number' ? child.layout.x : 0;
+        const childWidth = typeof child.props.width === 'number'
+          ? child.props.width
+          : this.calculateAutoWidth(child);
+        const rightEdge = childX + childWidth;
+        maxRightEdge = Math.max(maxRightEdge, rightEdge);
+      });
+
+      // Return the maximum right edge plus padding and border
+      return Math.max(maxRightEdge + (padding * 2), 10) + border;
+    }
+
     // Special case for Menu and List components (items in props, not children)
     if (node.type === 'Menu' || node.type === 'List') {
       const items = (node.props.items as any[]) || [];
@@ -274,6 +303,21 @@ export class LayoutEngine {
 
         return maxWidth + (padding * 2) + border;
       }
+    }
+
+    // Special case for Tabs — width is determined by the rendered tab bar
+    if (node.type === 'Tabs') {
+      const tabs = (node.props.tabs as any[]) || [];
+      const tabTexts = tabs.map((tab: any) => {
+        const label = typeof tab === 'string' ? tab : tab.label || 'Tab';
+        const icon = typeof tab === 'object' && tab.icon ? `${tab.icon} ` : '';
+        const status = typeof tab === 'object' && tab.status ? ' ●' : '';
+        const hotkey = typeof tab === 'object' && tab.hotkey ? ` ${tab.hotkey}` : '';
+        return `${icon}${label}${status}${hotkey}`;
+      });
+      // botRow: 1 leading dash + sum(╯/┴ + innerWidth + ╰/┴) per tab + 6 trailing dashes
+      // innerWidth = text.length + 2 (padding), so each tab occupies text.length + 4 chars
+      return 1 + tabTexts.reduce((sum: number, text: string) => sum + text.length + 4, 0) + 6;
     }
 
     // For containers (Stack, Box, Screen, etc.), calculate based on children
@@ -365,6 +409,25 @@ export class LayoutEngine {
   }
 
   private calculateAutoHeight(node: ComponentNode): number {
+    // For absolute positioned layouts, find the bottom-most edge of all children
+    if (node.layout.type === 'absolute') {
+      const padding = typeof node.layout.padding === 'number' ? node.layout.padding : 0;
+      const border = node.style.border ? 2 : 0;
+
+      let maxBottomEdge = 0;
+      node.children.forEach(child => {
+        const childY = typeof child.layout.y === 'number' ? child.layout.y : 0;
+        const childHeight = typeof child.props.height === 'number'
+          ? child.props.height
+          : this.calculateAutoHeight(child);
+        const bottomEdge = childY + childHeight;
+        maxBottomEdge = Math.max(maxBottomEdge, bottomEdge);
+      });
+
+      // Return the maximum bottom edge plus padding and border
+      return Math.max(maxBottomEdge + (padding * 2), 3) + border;
+    }
+
     // Special case for Menu and List components (items in props, not children)
     if (node.type === 'Menu' || node.type === 'List') {
       const items = (node.props.items as any[]) || [];
@@ -400,6 +463,11 @@ export class LayoutEngine {
         // Horizontal menu - height is 1 line
         return 1 + (padding * 2) + border;
       }
+    }
+
+    // Special case for Tabs — tab bar is always 3 rows (top border, content, separator)
+    if (node.type === 'Tabs') {
+      return 3;
     }
 
     // For containers (Stack, Box, Screen, etc.), calculate based on children

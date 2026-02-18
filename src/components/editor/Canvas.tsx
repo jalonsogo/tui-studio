@@ -402,6 +402,13 @@ function ComponentRenderer({ node, cellWidth, cellHeight, zoom }: ComponentRende
   const layout = layoutEngine.getLayout(node.id);
   const [isDragging, setIsDragging] = useState(false);
   const [insertionIndex, setInsertionIndex] = useState<number | null>(null);
+  const [resizing, setResizing] = useState<{
+    direction: 'e' | 's' | 'se';
+    startX: number;
+    startY: number;
+    startWidth: number;
+    startHeight: number;
+  } | null>(null);
 
   if (!layout || node.hidden) return null;
 
@@ -487,41 +494,40 @@ function ComponentRenderer({ node, cellWidth, cellHeight, zoom }: ComponentRende
         const tabs = (node.props.tabs as any[]) || [];
         const activeTab = (node.props.activeTab as number) || 0;
 
-        // Build tab content strings
-        const tabContents = tabs.map((tab, i) => {
-          const isActive = i === activeTab;
+        const tabStrings = tabs.map((tab: any) => {
           const label = typeof tab === 'string' ? tab : tab.label || 'Tab';
           const icon = typeof tab === 'object' && tab.icon ? `${tab.icon} ` : '';
           const status = typeof tab === 'object' && tab.status ? ' ●' : '';
-          const hotkey = typeof tab === 'object' && tab.hotkey ? `   ${tab.hotkey}` : '';
-
-          return ` ${icon}${label}${status}${hotkey} `;
+          const hotkey = typeof tab === 'object' && tab.hotkey ? ` ${tab.hotkey}` : '';
+          return `${icon}${label}${status}${hotkey}`;
         });
 
-        // First row: top borders
-        const topRow = tabContents.map((content, i) => {
-          return ` ╭${'─'.repeat(content.length - 2)}╮`;
-        }).join('');
+        const tabsGroupWidth = tabStrings.reduce((sum: number, t: string) => sum + t.length + 4, 0);
+        const componentWidth = layout.width;
+        const justify = (node.layout as any).justify || 'start';
+        let leftOffset = 1;
+        if (justify === 'center') {
+          leftOffset = Math.max(1, Math.floor((componentWidth - tabsGroupWidth) / 2));
+        } else if (justify === 'end') {
+          leftOffset = Math.max(1, componentWidth - tabsGroupWidth);
+        }
+        const rightOffset = Math.max(0, componentWidth - leftOffset - tabsGroupWidth);
 
-        // Second row: content
-        const contentRow = tabContents.map((content, i) => {
-          return ` │${content.slice(1, -1)}│`;
-        }).join('');
+        let topRow = ' '.repeat(leftOffset);
+        let midRow = ' '.repeat(leftOffset);
+        let botRow = '─'.repeat(leftOffset);
 
-        // Third row: bottom with connection
-        const activeIndex = activeTab;
-        let bottomRow = '─';
-        tabContents.forEach((content, i) => {
-          const barLength = content.length - 2;
-          if (i === activeIndex) {
-            bottomRow += `┴${'─'.repeat(barLength)}┴╯${' '.repeat(barLength + 1)}`;
-          } else {
-            bottomRow += `╰${'─'.repeat(barLength)}┴`;
-          }
+        tabStrings.forEach((text: string, i: number) => {
+          const innerWidth = text.length + 2;
+          topRow += `╭${'─'.repeat(innerWidth)}╮`;
+          midRow += `│ ${text} │`;
+          botRow += i === activeTab
+            ? `╯${' '.repeat(innerWidth)}╰`
+            : `┴${'─'.repeat(innerWidth)}┴`;
         });
-        bottomRow += '──────';
+        botRow += '─'.repeat(rightOffset);
 
-        return `${topRow}\n${contentRow}\n${bottomRow}`;
+        return `${topRow}\n${midRow}\n${botRow}`;
       }
       case 'Menu': {
         const items = (node.props.items as any[]) || [];
@@ -594,25 +600,25 @@ function ComponentRenderer({ node, cellWidth, cellHeight, zoom }: ComponentRende
       }
       case 'Tree': {
         const items = (node.props.items as any[]) || [];
-        const renderTreeItem = (item: any, level: number = 0, isLast: boolean = false, prefix: string = ''): string => {
-          const itemData = typeof item === 'string' ? { label: item, icon: '📄', children: [], expanded: false } : item;
-          const hasChildren = itemData.children && itemData.children.length > 0;
-          const connector = isLast ? '└─' : '├─';
-          const expandIcon = hasChildren ? (itemData.expanded ? '▼' : '▶') : ' ';
-
-          let result = `${prefix}${connector} ${expandIcon} ${itemData.icon || ''} ${itemData.label}\n`;
-
-          if (hasChildren && itemData.expanded) {
+        const renderTreeItem = (item: any, prefix: string, isLast: boolean): string => {
+          const itemData = typeof item === 'string' ? { label: item, children: [] } : item;
+          const connector = isLast ? '╰╼' : '├╼';
+          let result = `${prefix}${connector} ${itemData.label}\n`;
+          const children = itemData.children || [];
+          if (children.length > 0) {
             const childPrefix = prefix + (isLast ? '   ' : '│  ');
-            itemData.children.forEach((child: any, i: number) => {
-              result += renderTreeItem(child, level + 1, i === itemData.children.length - 1, childPrefix);
+            children.forEach((child: any, i: number) => {
+              result += renderTreeItem(child, childPrefix, i === children.length - 1);
             });
           }
-
           return result;
         };
 
-        return items.map((item, i) => renderTreeItem(item, 0, i === items.length - 1, '')).join('').trim();
+        let text = '┬\n';
+        items.forEach((item: any, i: number) => {
+          text += renderTreeItem(item, '', i === items.length - 1);
+        });
+        return text.trimEnd();
       }
       // Container components (Box, Flexbox, Grid, Stack, Spacer, Screen)
       case 'Box':
@@ -626,6 +632,54 @@ function ComponentRenderer({ node, cellWidth, cellHeight, zoom }: ComponentRende
         return node.type;
     }
   };
+
+  // Which resize handles to show based on component type
+  const getResizeHandles = (): Array<'e' | 's' | 'se'> => {
+    if (node.id === 'root') return [];
+    // These types have a fixed height — only allow width resize
+    const widthOnlyTypes = ['Tabs', 'Button', 'TextInput', 'Select', 'ProgressBar', 'Badge', 'Label', 'Spinner', 'Checkbox', 'Radio', 'Toggle'];
+    if (widthOnlyTypes.includes(node.type)) return ['e'];
+    return ['e', 's', 'se'];
+  };
+
+  const handleResizeStart = (e: React.MouseEvent, direction: 'e' | 's' | 'se') => {
+    e.preventDefault();
+    e.stopPropagation();
+    setResizing({
+      direction,
+      startX: e.clientX,
+      startY: e.clientY,
+      startWidth: layout.width,
+      startHeight: layout.height,
+    });
+  };
+
+  // Global mouse handlers while a resize drag is active
+  useEffect(() => {
+    if (!resizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaCharW = Math.round((e.clientX - resizing.startX) / (cellWidth * zoom));
+      const deltaCharH = Math.round((e.clientY - resizing.startY) / (cellHeight * zoom));
+      const updates: Record<string, number> = {};
+      if (resizing.direction !== 's') {
+        updates.width = Math.max(4, resizing.startWidth + deltaCharW);
+      }
+      if (resizing.direction !== 'e') {
+        updates.height = Math.max(1, resizing.startHeight + deltaCharH);
+      }
+      componentStore.updateProps(node.id, updates);
+    };
+
+    const handleMouseUp = () => setResizing(null);
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [resizing, cellWidth, cellHeight, zoom, node.id, componentStore]);
 
   const renderContent = () => {
     const text = getTextContent();
@@ -744,29 +798,28 @@ function ComponentRenderer({ node, cellWidth, cellHeight, zoom }: ComponentRende
       }
       case 'Tree': {
         const items = (node.props.items as any[]) || [];
-        const renderTreeItem = (item: any, level: number = 0, isLast: boolean = false, prefix: string = ''): string => {
-          const itemData = typeof item === 'string' ? { label: item, icon: '📄', children: [], expanded: false } : item;
-          const hasChildren = itemData.children && itemData.children.length > 0;
-          const connector = isLast ? '└─' : '├─';
-          const expandIcon = hasChildren ? (itemData.expanded ? '▼' : '▶') : ' ';
-
-          let result = `${prefix}${connector} ${expandIcon} ${itemData.icon || ''} ${itemData.label}\n`;
-
-          if (hasChildren && itemData.expanded) {
+        const renderTreeItem = (item: any, prefix: string, isLast: boolean): string => {
+          const itemData = typeof item === 'string' ? { label: item, children: [] } : item;
+          const connector = isLast ? '╰╼' : '├╼';
+          let result = `${prefix}${connector} ${itemData.label}\n`;
+          const children = itemData.children || [];
+          if (children.length > 0) {
             const childPrefix = prefix + (isLast ? '   ' : '│  ');
-            itemData.children.forEach((child: any, i: number) => {
-              result += renderTreeItem(child, level + 1, i === itemData.children.length - 1, childPrefix);
+            children.forEach((child: any, i: number) => {
+              result += renderTreeItem(child, childPrefix, i === children.length - 1);
             });
           }
-
           return result;
         };
 
-        const treeText = items.map((item, i) => renderTreeItem(item, 0, i === items.length - 1, '')).join('');
+        let treeText = '┬\n';
+        items.forEach((item: any, i: number) => {
+          treeText += renderTreeItem(item, '', i === items.length - 1);
+        });
 
         return (
           <div className="font-mono text-xs whitespace-pre leading-tight">
-            {treeText}
+            {treeText.trimEnd()}
           </div>
         );
       }
@@ -774,41 +827,52 @@ function ComponentRenderer({ node, cellWidth, cellHeight, zoom }: ComponentRende
         const tabs = (node.props.tabs as any[]) || [];
         const activeTab = (node.props.activeTab as number) || 0;
 
-        // Build each row as a string
-        let topRow = ' ';
-        let contentRow = ' ';
-        let bottomRow = '─';
-
-        tabs.forEach((tab, i) => {
-          const isActive = i === activeTab;
+        const tabStrings = tabs.map((tab: any) => {
           const label = typeof tab === 'string' ? tab : tab.label || 'Tab';
           const icon = typeof tab === 'object' && tab.icon ? `${tab.icon} ` : '';
           const status = typeof tab === 'object' && tab.status ? ' ●' : '';
-          const hotkey = typeof tab === 'object' && tab.hotkey ? `   ${tab.hotkey}` : '';
-          const content = ` ${icon}${label}${status}${hotkey} `;
-          const barLength = content.length - 2;
-
-          // Top row
-          topRow += `╭${'─'.repeat(barLength)}╮`;
-
-          // Content row
-          contentRow += `│${content.slice(1, -1)}│`;
-
-          // Bottom row
-          if (isActive) {
-            bottomRow += `┴${'─'.repeat(barLength)}┴╯${' '.repeat(barLength + 1)}`;
-          } else {
-            bottomRow += `╰${'─'.repeat(barLength)}┴`;
-          }
+          const hotkey = typeof tab === 'object' && tab.hotkey ? ` ${tab.hotkey}` : '';
+          return `${icon}${label}${status}${hotkey}`;
         });
 
-        bottomRow += '──────';
+        // Total width occupied by all tab borders+content (no padding chars)
+        const tabsGroupWidth = tabStrings.reduce((sum: number, t: string) => sum + t.length + 4, 0);
+        const componentWidth = layout.width;
+
+        // Map justify → left offset of the tab group on the separator line
+        const justify = (node.layout as any).justify || 'start';
+        let leftOffset: number;
+        if (justify === 'center') {
+          leftOffset = Math.max(1, Math.floor((componentWidth - tabsGroupWidth) / 2));
+        } else if (justify === 'end') {
+          leftOffset = Math.max(1, componentWidth - tabsGroupWidth);
+        } else {
+          leftOffset = 1; // start / default
+        }
+        const rightOffset = Math.max(0, componentWidth - leftOffset - tabsGroupWidth);
+
+        // Row 1: offset spaces + tab top borders
+        let topRow = ' '.repeat(leftOffset);
+        // Row 2: offset spaces + tab content
+        let midRow = ' '.repeat(leftOffset);
+        // Row 3: full-width separator; active tab bottom is open (╯…╰), inactive close (┴…┴)
+        let botRow = '─'.repeat(leftOffset);
+
+        tabStrings.forEach((text: string, i: number) => {
+          const innerWidth = text.length + 2;
+          topRow += `╭${'─'.repeat(innerWidth)}╮`;
+          midRow += `│ ${text} │`;
+          botRow += i === activeTab
+            ? `╯${' '.repeat(innerWidth)}╰`
+            : `┴${'─'.repeat(innerWidth)}┴`;
+        });
+        botRow += '─'.repeat(rightOffset);
 
         return (
           <div className="font-mono leading-none text-xs whitespace-pre">
             <div>{topRow}</div>
-            <div className="font-bold">{contentRow}</div>
-            <div>{bottomRow}</div>
+            <div>{midRow}</div>
+            <div>{botRow}</div>
           </div>
         );
       }
@@ -1107,9 +1171,11 @@ function ComponentRenderer({ node, cellWidth, cellHeight, zoom }: ComponentRende
         }}
       >
         {/* Render content - border is handled by CSS */}
-        <div className={node.type === 'Button' ? 'font-mono font-bold' : 'font-mono'}>
-          {getTextContent()}
-        </div>
+        {['Tabs', 'Tree'].includes(node.type) ? renderContent() : (
+          <div className={node.type === 'Button' ? 'font-mono font-bold' : 'font-mono'}>
+            {getTextContent()}
+          </div>
+        )}
 
         {/* Component label - only when selected, shows name + dimensions + position */}
         {isSelected && node.id !== 'root' && (
@@ -1120,6 +1186,31 @@ function ComponentRenderer({ node, cellWidth, cellHeight, zoom }: ComponentRende
             {node.name} · {layout.width}×{layout.height} @ ({layout.x}, {layout.y})
           </div>
         )}
+
+        {/* Resize handles - shown when selected, constrained by component type */}
+        {isSelected && node.id !== 'root' && !isDragging && getResizeHandles().map(dir => {
+          const handlePositions: Record<string, React.CSSProperties> = {
+            e:  { right: '-4px', top: '50%', transform: 'translateY(-50%)', cursor: 'ew-resize' },
+            s:  { bottom: '-4px', left: '50%', transform: 'translateX(-50%)', cursor: 'ns-resize' },
+            se: { right: '-4px', bottom: '-4px', cursor: 'nwse-resize' },
+          };
+          return (
+            <div
+              key={dir}
+              style={{
+                position: 'absolute',
+                width: '8px',
+                height: '8px',
+                backgroundColor: 'hsl(var(--primary))',
+                border: '2px solid white',
+                borderRadius: '2px',
+                zIndex: 50,
+                ...handlePositions[dir],
+              }}
+              onMouseDown={e => handleResizeStart(e, dir as 'e' | 's' | 'se')}
+            />
+          );
+        })}
       </div>
 
       {/* Insertion line indicator */}
