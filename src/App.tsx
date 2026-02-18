@@ -198,7 +198,7 @@ function App() {
 
   // Listen for command events
   useEffect(() => {
-    const handleSave = () => {
+    const handleSave = async () => {
       const root = useComponentStore.getState().root;
       if (!root) return;
       const theme = useThemeStore.getState().currentTheme;
@@ -212,11 +212,30 @@ function App() {
         tree: root,
       };
       const json = JSON.stringify(data, null, 2);
+      const suggestedName = `${root.name.toLowerCase().replace(/\s+/g, '-')}.tui`;
+
+      // Use native OS save dialog if available (Chrome / Edge)
+      if ('showSaveFilePicker' in window) {
+        try {
+          const fileHandle = await (window as any).showSaveFilePicker({
+            suggestedName,
+            types: [{ description: 'TUI Studio File', accept: { 'application/json': ['.tui'] } }],
+          });
+          const writable = await fileHandle.createWritable();
+          await writable.write(json);
+          await writable.close();
+          return;
+        } catch (err) {
+          if ((err as Error).name === 'AbortError') return; // user cancelled
+        }
+      }
+
+      // Fallback: trigger browser download
       const blob = new Blob([json], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${root.name.toLowerCase().replace(/\s+/g, '-')}.tui`;
+      a.download = suggestedName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
