@@ -949,7 +949,15 @@ const ComponentRenderer = memo(function ComponentRenderer({ node, cellWidth, cel
           width: `${layout.width * cellWidth * zoom}px`,
           height: `${layout.height * cellHeight * zoom}px`,
           color: getColor(node.style.color) || 'inherit',
-          backgroundColor: getColor(node.style.backgroundColor),
+          background: (() => {
+            const g = node.style.backgroundGradient;
+            if (g && g.stops.length >= 2) {
+              const sorted = [...g.stops].sort((a, b) => a.position - b.position);
+              const stopStr = sorted.map(s => `${getColor(s.color) ?? s.color} ${s.position}%`).join(', ');
+              return `linear-gradient(${g.angle}deg, ${stopStr})`;
+            }
+            return getColor(node.style.backgroundColor) ?? undefined;
+          })(),
           fontWeight: node.style.bold ? 'bold' : 'normal',
           fontStyle: node.style.italic ? 'italic' : 'normal',
           textDecoration: node.style.underline ? 'underline' : 'none',

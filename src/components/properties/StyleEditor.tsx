@@ -196,7 +196,9 @@ export function StyleEditor({ component }: StyleEditorProps) {
         <ColorPicker
           label="Background"
           value={component.style.backgroundColor}
-          onChange={(color) => updateStyle({ backgroundColor: color })}
+          onChange={(color) => updateStyle({ backgroundColor: color, backgroundGradient: undefined })}
+          gradient={component.style.backgroundGradient}
+          onGradientChange={(g) => updateStyle({ backgroundGradient: g, backgroundColor: g ? undefined : component.style.backgroundColor })}
         />
 
         {/* Text style buttons */}

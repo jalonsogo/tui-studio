@@ -87,6 +87,17 @@ export interface LayoutProps {
   margin?: number | { top: number; right: number; bottom: number; left: number };
 }
 
+export interface GradientStop {
+  color: string;    // hex color, e.g. "#ff0000"
+  position: number; // 0–100 percentage
+}
+
+export interface GradientConfig {
+  type: 'linear';
+  angle: number;  // degrees: 0=top→bottom, 90=left→right, 180=bottom→top, 270=right→left
+  stops: GradientStop[];
+}
+
 export interface StyleProps {
   // Border
   border?: boolean;
@@ -105,6 +116,7 @@ export interface StyleProps {
   // Colors
   color?: string;        // Text/foreground color
   backgroundColor?: string;
+  backgroundGradient?: GradientConfig;
 
   // Checkbox colors
   checkedColor?: string;
