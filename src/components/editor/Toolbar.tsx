@@ -220,13 +220,14 @@ function HelpModal({ onClose }: { onClose: () => void }) {
 
 function AboutModal({ onClose }: { onClose: () => void }) {
   useEscapeKey(onClose);
+  const { darkMode } = useThemeStore();
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
       <div
         className="bg-card border border-border rounded-xl shadow-2xl p-8 w-96 flex flex-col items-center gap-4 text-center"
         onClick={e => e.stopPropagation()}
       >
-        <img src="/favicon_white.svg" alt="TUIStudio" className="w-16 h-16" />
+        <img src={darkMode ? '/favicon_white.svg' : '/favicon_dark.svg'} alt="TUIStudio" className="w-16 h-16" />
         <div>
           <h2 className="text-base font-semibold">TUIStudio</h2>
           <p className="text-[11px] text-muted-foreground mt-0.5">Terminal UI Design Tool</p>
@@ -646,7 +647,11 @@ export function Toolbar() {
         {/* Left - Logo/Title */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-0.5">
-            <img src="/tui-studio.svg" alt="TUIStudio" className="w-7 h-7" />
+            <img
+              src={themeStore.darkMode ? '/tui-studio_light.svg' : '/tui-studio_dark.svg'}
+              alt="TUIStudio"
+              className="w-7 h-7"
+            />
             <AppMenu />
           </div>
           <div>
