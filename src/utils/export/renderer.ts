@@ -21,11 +21,18 @@ export function renderTree(
 ): string {
   if (!root) return '';
 
-  // Calculate layouts
+  // Calculate layouts using viewport dimensions as available space constraints
   layoutEngine.calculateLayout(root, options.width, options.height);
 
-  // Create main canvas
-  const canvas = new CharCanvas(options.width, options.height);
+  // Use the root's actual computed dimensions (auto-sizing) rather than the
+  // full viewport size. This prevents a small design from appearing as a tiny
+  // dot inside a massive empty canvas in exported output.
+  const rootLayout = layoutEngine.getLayout(root.id);
+  const renderWidth  = rootLayout?.width  ?? options.width;
+  const renderHeight = rootLayout?.height ?? options.height;
+
+  // Create canvas sized to the design's actual footprint
+  const canvas = new CharCanvas(renderWidth, renderHeight);
 
   // Render all visible components
   renderNodeToCanvas(root, canvas, options.colorMode || 'ansi16');
@@ -68,7 +75,11 @@ export function renderTreeToLines(
   if (!root) return [];
 
   layoutEngine.calculateLayout(root, options.width, options.height);
-  const canvas = new CharCanvas(options.width, options.height);
+  const rootLayout = layoutEngine.getLayout(root.id);
+  const renderWidth  = rootLayout?.width  ?? options.width;
+  const renderHeight = rootLayout?.height ?? options.height;
+
+  const canvas = new CharCanvas(renderWidth, renderHeight);
   renderNodeToCanvas(root, canvas, options.colorMode || 'ansi16');
 
   return canvas.toLines();
