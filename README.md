@@ -7,6 +7,8 @@
 
 A Figma-like visual editor for designing Terminal UI applications. Drag-and-drop components onto a live canvas, edit properties visually, and export to multiple TUI frameworks.
 
+![TUIStudio](public/cube.png)
+
 ## Features
 
 - **Visual Canvas** — Drag-and-drop components with live ANSI preview at configurable zoom levels
