@@ -15,6 +15,7 @@ export function Canvas() {
   const componentStore = useComponentStore();
   const canvasStore = useCanvasStore();
   const selectionStore = useSelectionStore();
+  const themeStore = useThemeStore();
 
   const { root } = componentStore;
 
@@ -230,10 +231,11 @@ export function Canvas() {
       <div className="relative" style={{ width: viewportWidth, height: viewportHeight }}>
         {/* Canvas Background */}
         <div
-          className={`absolute inset-0 bg-background border-2 rounded transition-colors ${
+          className={`absolute inset-0 border-2 rounded transition-colors ${
             isDragOver ? 'border-primary border-dashed' : 'border-border'
           }`}
           style={{
+            backgroundColor: (THEMES[themeStore.currentTheme as keyof typeof THEMES] || THEMES.dracula).black,
             fontFamily: 'monospace',
             fontSize: `${12 * canvasStore.zoom}px`,
           }}
