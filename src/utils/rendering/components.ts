@@ -12,10 +12,12 @@ import { generateAnsiCodes } from './ansi';
 export function renderComponent(node: ComponentNode, width: number, height: number, colorMode: 'ansi16' | 'ansi256' | 'trueColor' = 'ansi16'): string[] {
   const canvas = new CharCanvas(width, height);
 
-  // Generate style code
+  // Generate style code (foreground + text decoration only; background handled separately for gradients)
+  const hasGradient = !!(node.style.backgroundGradient && node.style.backgroundGradient.stops.length >= 2);
+
   const style = generateAnsiCodes({
     color: node.style.color,
-    backgroundColor: node.style.backgroundColor,
+    backgroundColor: hasGradient ? undefined : node.style.backgroundColor,
     bold: node.style.bold,
     italic: node.style.italic,
     underline: node.style.underline,
@@ -79,8 +81,14 @@ export function renderComponent(node: ComponentNode, width: number, height: numb
     content = renderBox(content, width, height, borderConfig);
   }
 
-  // Write content to canvas with style
-  canvas.writeLines(0, 0, content, style);
+  // For gradient backgrounds, pre-fill every cell with (textStyle + gradientBg),
+  // then write content characters without re-setting the style so the gradient shows through.
+  if (hasGradient) {
+    canvas.fillGradient(0, 0, width, height, node.style.backgroundGradient!, style);
+    canvas.writeLines(0, 0, content); // no style arg → preserves per-cell gradient styles
+  } else {
+    canvas.writeLines(0, 0, content, style);
+  }
 
   return canvas.toLines();
 }

@@ -1,5 +1,8 @@
 // Canvas rendering utilities for compositing components
 
+import type { GradientConfig } from '../../types';
+import { gradientBgCode } from './ansi';
+
 /**
  * 2D character canvas for compositing TUI components
  */
@@ -75,6 +78,35 @@ export class CharCanvas {
   vline(x: number, y: number, length: number, char: string = '│', style?: string): void {
     for (let i = 0; i < length; i++) {
       this.write(x, y + i, char, style);
+    }
+  }
+
+  /**
+   * Fill a rectangle with a gradient background, one ANSI color per column (horizontal)
+   * or per row (vertical), based on the gradient angle.
+   * `textStyle` is an optional additional ANSI style prefix (e.g. foreground color) to combine.
+   */
+  fillGradient(x: number, y: number, width: number, height: number, gradient: GradientConfig, textStyle: string = ''): void {
+    // Determine whether we interpolate along columns (horizontal-ish) or rows (vertical-ish)
+    const angle = ((gradient.angle % 360) + 360) % 360;
+    const horizontal = angle >= 45 && angle < 135 || angle >= 225 && angle < 315;
+
+    for (let row = y; row < y + height && row < this.height; row++) {
+      if (row < 0) continue;
+      for (let col = x; col < x + width && col < this.width; col++) {
+        if (col < 0) continue;
+        let t: number;
+        if (horizontal) {
+          t = width > 1 ? (col - x) / (width - 1) : 0;
+          // Reverse direction if angle points right-to-left
+          if (angle >= 225 && angle < 315) t = 1 - t;
+        } else {
+          t = height > 1 ? (row - y) / (height - 1) : 0;
+          if (angle >= 180 && angle < 360) t = 1 - t;
+        }
+        this.buffer[row][col] = ' ';
+        this.styleBuffer[row][col] = textStyle + gradientBgCode(gradient, t);
+      }
     }
   }
 

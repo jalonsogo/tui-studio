@@ -1,5 +1,7 @@
 // ANSI escape code utilities
 
+import type { GradientConfig } from '../../types';
+
 export interface AnsiStyle {
   color?: string;
   backgroundColor?: string;
@@ -131,6 +133,62 @@ export function generateAnsiCodes(style: AnsiStyle, colorMode: 'ansi16' | 'ansi2
  * Reset all ANSI styling
  */
 export const ANSI_RESET = '\x1b[0m';
+
+/**
+ * Parse a hex color to [r, g, b] components (0–255 each)
+ */
+export function hexToRgb(hex: string): [number, number, number] {
+  if (!hex.startsWith('#')) return [255, 255, 255];
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return [r, g, b];
+}
+
+/**
+ * Linearly interpolate between two RGB values
+ */
+function lerpRgb(a: [number, number, number], b: [number, number, number], t: number): [number, number, number] {
+  return [
+    Math.round(a[0] + (b[0] - a[0]) * t),
+    Math.round(a[1] + (b[1] - a[1]) * t),
+    Math.round(a[2] + (b[2] - a[2]) * t),
+  ];
+}
+
+/**
+ * Interpolate a gradient at position t (0–1), returns [r, g, b].
+ * Sorts stops by position and lerps between the two surrounding stops.
+ */
+export function interpolateGradientColor(gradient: GradientConfig, t: number): [number, number, number] {
+  const stops = [...gradient.stops].sort((a, b) => a.position - b.position);
+  if (stops.length === 0) return [0, 0, 0];
+  if (stops.length === 1) return hexToRgb(stops[0].color);
+
+  const pct = t * 100;
+
+  if (pct <= stops[0].position) return hexToRgb(stops[0].color);
+  if (pct >= stops[stops.length - 1].position) return hexToRgb(stops[stops.length - 1].color);
+
+  for (let i = 0; i < stops.length - 1; i++) {
+    const s0 = stops[i];
+    const s1 = stops[i + 1];
+    if (pct >= s0.position && pct <= s1.position) {
+      const localT = (pct - s0.position) / (s1.position - s0.position);
+      return lerpRgb(hexToRgb(s0.color), hexToRgb(s1.color), localT);
+    }
+  }
+
+  return hexToRgb(stops[stops.length - 1].color);
+}
+
+/**
+ * Build the ANSI true-color background escape code for an interpolated gradient color
+ */
+export function gradientBgCode(gradient: GradientConfig, t: number): string {
+  const [r, g, b] = interpolateGradientColor(gradient, t);
+  return `\x1b[48;2;${r};${g};${b}m`;
+}
 
 /**
  * Wrap text with ANSI codes

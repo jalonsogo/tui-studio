@@ -7,6 +7,7 @@ import { dragStore } from '../../hooks/useDragAndDrop';
 import { COMPONENT_LIBRARY, canHaveChildren } from '../../constants/components';
 import { THEMES } from '../../stores/themeStore';
 import type { ComponentNode } from '../../types';
+import { interpolateGradientColor } from '../../utils/rendering/ansi';
 import { ComponentToolbar } from './ComponentToolbar';
 
 
@@ -350,6 +351,31 @@ const ComponentRenderer = memo(function ComponentRenderer({ node, cellWidth, cel
   };
 
   const layout = layoutEngine.getLayout(node.id);
+
+  // Build a stepped CSS gradient that matches terminal rendering:
+  // one hard-stop band per character column (horizontal) or row (vertical).
+  const buildCliGradientCss = (): string | undefined => {
+    const g = node.style.backgroundGradient;
+    if (!g || g.stops.length < 2 || !layout) return undefined;
+    const angle = ((g.angle % 360) + 360) % 360;
+    const horizontal = (angle >= 45 && angle < 135) || (angle >= 225 && angle < 315);
+    const count = horizontal ? layout.width : layout.height;
+    if (count < 1) return undefined;
+    const cssAngle = horizontal
+      ? (angle >= 225 && angle < 315 ? 270 : 90)
+      : (angle >= 180 && angle < 360 ? 0 : 180);
+    const hardStops: string[] = [];
+    for (let i = 0; i < count; i++) {
+      const t = i / Math.max(1, count - 1);
+      const [r, gv, b] = interpolateGradientColor(g, t);
+      const color = `rgb(${r},${gv},${b})`;
+      const s = ((i / count) * 100).toFixed(3);
+      const e = (((i + 1) / count) * 100).toFixed(3);
+      hardStops.push(`${color} ${s}%`, `${color} ${e}%`);
+    }
+    return `linear-gradient(${cssAngle}deg, ${hardStops.join(', ')})`;
+  };
+
   const [isDragging, setIsDragging] = useState(false);
   const [insertionIndex, setInsertionIndex] = useState<number | null>(null);
   const [resizing, setResizing] = useState<{
@@ -949,7 +975,7 @@ const ComponentRenderer = memo(function ComponentRenderer({ node, cellWidth, cel
           width: `${layout.width * cellWidth * zoom}px`,
           height: `${layout.height * cellHeight * zoom}px`,
           color: getColor(node.style.color) || 'inherit',
-          backgroundColor: getColor(node.style.backgroundColor),
+          background: buildCliGradientCss() ?? getColor(node.style.backgroundColor),
           fontWeight: node.style.bold ? 'bold' : 'normal',
           fontStyle: node.style.italic ? 'italic' : 'normal',
           textDecoration: node.style.underline ? 'underline' : 'none',
