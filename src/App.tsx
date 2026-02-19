@@ -79,6 +79,13 @@ function App() {
                       target.tagName === 'TEXTAREA' ||
                       target.isContentEditable;
 
+      // Help / Keyboard shortcuts (Ctrl/Cmd+?)
+      if ((e.metaKey || e.ctrlKey) && e.key === '?') {
+        e.preventDefault();
+        window.dispatchEvent(new Event('command-help'));
+        return;
+      }
+
       // Undo (Ctrl/Cmd+Z)
       if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
