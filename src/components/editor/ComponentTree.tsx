@@ -35,6 +35,7 @@ import { useComponentStore, useSelectionStore } from '../../stores';
 import type { ComponentNode, ComponentType } from '../../types';
 import { dragStore } from '../../hooks/useDragAndDrop';
 import { COMPONENT_LIBRARY, canHaveChildren } from '../../constants/components';
+import { findNodeById } from '../../utils/treeUtils';
 
 // In-memory style clipboard (module-level, shared across all TreeNodes)
 let styleClipboard: ComponentNode['style'] | null = null;
@@ -265,6 +266,21 @@ export function getComponentIcon(type: ComponentType) {
 
 export function ComponentTree({ warningNodeIds = new Set<string>() }: { warningNodeIds?: Set<string> }) {
   const componentStore = useComponentStore();
+  const [canvasMenu, setCanvasMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+
+  // Listen for right-click events dispatched from canvas objects
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { id, x, y } = (e as CustomEvent).detail;
+      setCanvasMenu({ id, x, y });
+    };
+    window.addEventListener('canvas-context-menu', handler);
+    return () => window.removeEventListener('canvas-context-menu', handler);
+  }, []);
+
+  const canvasMenuNode = canvasMenu && componentStore.root
+    ? findNodeById(componentStore.root, canvasMenu.id)
+    : null;
 
   if (!componentStore.root) {
     return (
@@ -277,6 +293,13 @@ export function ComponentTree({ warningNodeIds = new Set<string>() }: { warningN
   return (
     <div className="p-2">
       <TreeNode node={componentStore.root} level={0} warningNodeIds={warningNodeIds} />
+      {canvasMenu && canvasMenuNode && (
+        <ContextMenu
+          state={{ x: canvasMenu.x, y: canvasMenu.y, nodeId: canvasMenu.id }}
+          node={canvasMenuNode}
+          onClose={() => setCanvasMenu(null)}
+        />
+      )}
     </div>
   );
 }

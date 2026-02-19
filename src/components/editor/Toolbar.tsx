@@ -156,7 +156,7 @@ function AboutModal({ onClose }: { onClose: () => void }) {
         className="bg-card border border-border rounded-xl shadow-2xl p-8 w-96 flex flex-col items-center gap-4 text-center"
         onClick={e => e.stopPropagation()}
       >
-        <img src="/favicon_dark.svg" alt="TUIStudio" className="w-16 h-16" />
+        <img src="/favicon_white.svg" alt="TUIStudio" className="w-16 h-16" />
         <div>
           <h2 className="text-base font-semibold">TUIStudio</h2>
           <p className="text-[11px] text-muted-foreground mt-0.5">Terminal UI Design Tool</p>

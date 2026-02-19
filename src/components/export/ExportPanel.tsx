@@ -2,39 +2,48 @@
 
 import { useState } from 'react';
 import { Download, Copy, Eye } from 'lucide-react';
-import { useComponentStore, useCanvasStore, useThemeStore } from '../../stores';
-import { exportToText, exportToCode } from '../../utils/export';
-import type { ExportFormat } from '../../types';
+import { useComponentStore, useCanvasStore } from '../../stores';
+import { exportToText, exportToCode, exportToHtmlFile, ansiToHtml } from '../../utils/export';
+// ExportFormat is typed as an interface but used as a string in the codebase
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type CodeFormat = any;
 
 type ExportMode = 'preview' | 'text' | 'code';
 
 export function ExportPanel() {
   const componentStore = useComponentStore();
   const canvasStore = useCanvasStore();
-  const themeStore = useThemeStore();
 
   const [mode, setMode] = useState<ExportMode>('preview');
   const [textFormat, setTextFormat] = useState<'text' | 'ansi' | 'ansi256' | 'trueColor'>('ansi');
-  const [codeFormat, setCodeFormat] = useState<ExportFormat>('opentui');
+  const [codeFormat, setCodeFormat] = useState('opentui');
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = async () => {
-    const output = mode === 'code'
-      ? exportToCode(componentStore.root, codeFormat)
-      : exportToText(componentStore.root, {
-          format: textFormat,
-          width: canvasStore.width,
-          height: canvasStore.height,
-        });
+  const getOutput = () => {
+    if (mode === 'code') {
+      if (codeFormat === 'html') {
+        return exportToHtmlFile(componentStore.root, canvasStore.width, canvasStore.height);
+      }
+      return exportToCode(componentStore.root, codeFormat as CodeFormat);
+    }
+    return exportToText(componentStore.root, {
+      format: textFormat,
+      width: canvasStore.width,
+      height: canvasStore.height,
+    });
+  };
 
-    await navigator.clipboard.writeText(output);
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(getOutput());
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleDownload = () => {
     const output = mode === 'code'
-      ? exportToCode(componentStore.root, codeFormat)
+      ? (codeFormat === 'html'
+          ? exportToHtmlFile(componentStore.root, canvasStore.width, canvasStore.height)
+          : exportToCode(componentStore.root, codeFormat as CodeFormat))
       : exportToText(componentStore.root, {
           format: textFormat,
           width: canvasStore.width,
@@ -44,8 +53,9 @@ export function ExportPanel() {
 
     const extension = mode === 'code' ? getCodeExtension(codeFormat) : '.txt';
     const filename = `tui-design${extension}`;
+    const mimeType = codeFormat === 'html' && mode === 'code' ? 'text/html' : 'text/plain';
 
-    const blob = new Blob([output], { type: 'text/plain' });
+    const blob = new Blob([output], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -103,7 +113,7 @@ export function ExportPanel() {
             <label className="text-sm font-medium mb-2 block">Text Format</label>
             <select
               value={textFormat}
-              onChange={(e) => setTextFormat(e.target.value as any)}
+              onChange={(e) => setTextFormat(e.target.value as 'text' | 'ansi' | 'ansi256' | 'trueColor')}
               className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm"
             >
               <option value="text">Plain Text</option>
@@ -119,7 +129,7 @@ export function ExportPanel() {
             <label className="text-sm font-medium mb-2 block">Framework</label>
             <select
               value={codeFormat}
-              onChange={(e) => setCodeFormat(e.target.value as ExportFormat)}
+              onChange={(e) => setCodeFormat(e.target.value)}
               className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm"
             >
               <option value="opentui">OpenTUI (React)</option>
@@ -127,6 +137,7 @@ export function ExportPanel() {
               <option value="bubbletea">Bubble Tea (Go)</option>
               <option value="blessed">Blessed (Node.js)</option>
               <option value="textual">Textual (Python)</option>
+              <option value="html">HTML + CSS</option>
             </select>
           </div>
         )}
@@ -166,39 +177,59 @@ function PreviewOutput() {
   const componentStore = useComponentStore();
   const canvasStore = useCanvasStore();
 
-  const output = exportToText(componentStore.root, {
+  const ansiOutput = exportToText(componentStore.root, {
     format: 'ansi',
     width: canvasStore.width,
     height: canvasStore.height,
   });
 
+  const html = ansiToHtml(ansiOutput);
+
   return (
-    <pre className="text-xs font-mono bg-black text-white p-4 rounded overflow-auto whitespace-pre">
-      {output || 'No components to preview'}
-    </pre>
+    <div
+      className="text-xs font-mono bg-black text-[#cccccc] p-4 rounded overflow-auto leading-[1.4] border border-border"
+      style={{ fontFamily: "'Courier New', Consolas, Monaco, monospace", whiteSpace: 'pre' }}
+      dangerouslySetInnerHTML={{ __html: html || 'No components to preview' }}
+    />
   );
 }
 
 function TextOutput({ format, width, height }: { format: string; width: number; height: number }) {
   const componentStore = useComponentStore();
 
-  const output = exportToText(componentStore.root, {
-    format: format as any,
+  if (format === 'text') {
+    const output = exportToText(componentStore.root, { format: 'text', width, height });
+    return (
+      <pre className="text-xs font-mono bg-secondary p-4 rounded overflow-auto whitespace-pre border border-border">
+        {output || 'No components to export'}
+      </pre>
+    );
+  }
+
+  // For ANSI formats, show a visual (HTML) representation
+  const ansiOutput = exportToText(componentStore.root, {
+    format: format as 'ansi' | 'ansi256' | 'trueColor',
     width,
     height,
   });
+  const html = ansiToHtml(ansiOutput);
 
   return (
-    <pre className="text-xs font-mono bg-secondary p-4 rounded overflow-auto whitespace-pre border border-border">
-      {output || 'No components to export'}
-    </pre>
+    <div
+      className="text-xs font-mono bg-black text-[#cccccc] p-4 rounded overflow-auto leading-[1.4] border border-border"
+      style={{ fontFamily: "'Courier New', Consolas, Monaco, monospace", whiteSpace: 'pre' }}
+      dangerouslySetInnerHTML={{ __html: html || 'No components to export' }}
+    />
   );
 }
 
-function CodeOutput({ format }: { format: ExportFormat }) {
+function CodeOutput({ format }: { format: string }) {
   const componentStore = useComponentStore();
+  const canvasStore = useCanvasStore();
 
-  const output = exportToCode(componentStore.root, format);
+  const output = format === 'html'
+    ? exportToHtmlFile(componentStore.root, canvasStore.width, canvasStore.height)
+    : exportToCode(componentStore.root, format as CodeFormat);
 
   return (
     <pre className="text-xs font-mono bg-secondary p-4 rounded overflow-auto border border-border">
@@ -207,7 +238,7 @@ function CodeOutput({ format }: { format: ExportFormat }) {
   );
 }
 
-function getCodeExtension(format: ExportFormat): string {
+function getCodeExtension(format: string): string {
   switch (format) {
     case 'opentui':
     case 'ink':
@@ -218,6 +249,8 @@ function getCodeExtension(format: ExportFormat): string {
       return '.js';
     case 'textual':
       return '.py';
+    case 'html':
+      return '.html';
     default:
       return '.txt';
   }

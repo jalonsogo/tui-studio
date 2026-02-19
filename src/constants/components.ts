@@ -195,7 +195,7 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
       type: 'none',
     },
     defaultStyle: {
-      selectedColor: 'blue',
+      selectedColor: 'green',
       unselectedColor: 'white',
       labelColor: 'white',
     },

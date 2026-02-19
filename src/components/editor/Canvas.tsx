@@ -450,7 +450,7 @@ const ComponentRenderer = memo(function ComponentRenderer({ node, cellWidth, cel
         const checked = node.props.checked as boolean;
         const label = (node.props.label as string) || 'Option';
         const iconColor = checked
-          ? getColorClass((node.style.selectedColor as string) || 'blue')
+          ? getColorClass((node.style.selectedColor as string) || 'green')
           : getColorClass((node.style.unselectedColor as string) || 'white');
         const icon = checked ? selectedIcon : unselectedIcon;
         return (
@@ -956,6 +956,16 @@ const ComponentRenderer = memo(function ComponentRenderer({ node, cellWidth, cel
             selectionStore.select(node.id);
           } else {
             selectionStore.clearSelection();
+          }
+        }}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (node.id !== 'root') {
+            selectionStore.select(node.id);
+            window.dispatchEvent(new CustomEvent('canvas-context-menu', {
+              detail: { id: node.id, x: e.clientX, y: e.clientY },
+            }));
           }
         }}
       >
