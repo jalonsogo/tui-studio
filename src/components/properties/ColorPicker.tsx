@@ -227,7 +227,7 @@ export function ColorPicker({ value, onChange, label, gradient, onGradientChange
       {isOpen && (
         <div
           className="absolute z-50 left-0 mt-1 bg-popover border border-border rounded-md flex flex-col"
-          style={{ top: '100%', width: activeTab === 'gradient' ? '220px' : '192px' }}
+          style={{ top: '100%', width: activeTab === 'gradient' ? '280px' : '192px' }}
           tabIndex={-1}
           onKeyDown={handlePopupKeyDown}
         >
@@ -245,7 +245,7 @@ export function ColorPicker({ value, onChange, label, gradient, onGradientChange
             ))}
           </div>
 
-          <div ref={listRef} className="overflow-y-auto max-h-72">
+          <div ref={listRef} className={activeTab === 'gradient' ? '' : 'overflow-y-auto max-h-72'}>
             {/* None option (solid tabs only) */}
             {activeTab !== 'gradient' && (
               <button type="button" onClick={() => { onChange(''); setIsOpen(false); }}
