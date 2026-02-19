@@ -109,3 +109,7 @@ For {root} sake I'm a designer. Mostly all the code has been written by chatGPT 
 ---
 
 **Issues**: [GitHub Issues](https://github.com/jalonsogo/tui-studio/issues)
+
+## LOLcense
+
+For {root} sake I'm a designer. Mostly all the code has been written by Claude and ad latere.
