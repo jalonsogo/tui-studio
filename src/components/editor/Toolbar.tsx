@@ -1,7 +1,7 @@
 // Top toolbar with controls
 
 import { useState, useEffect, useRef } from 'react';
-import { Undo2, Redo2, ZoomIn, ZoomOut, Grid3x3, Save, Palette, Search, ChevronDown, ChevronRight, Github, FolderOpen, Check } from 'lucide-react';
+import { Undo2, Redo2, ZoomIn, ZoomOut, Grid3x3, Save, Palette, Search, ChevronDown, ChevronRight, Github, FolderOpen, Check, Sun, Moon } from 'lucide-react';
 import { useComponentStore, useCanvasStore, useThemeStore } from '../../stores';
 import { ExportModal } from '../export/ExportModal';
 import { THEME_NAMES, THEMES } from '../../stores/themeStore';
@@ -297,6 +297,37 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
         onClick={e => e.stopPropagation()}
       >
         <h2 className="text-sm font-semibold mb-5">Settings</h2>
+
+        {/* Appearance */}
+        <div className="mb-6">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">
+            Appearance
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => { if (themeStore.darkMode) themeStore.toggleDarkMode(); }}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border text-sm font-medium transition-all ${
+                !themeStore.darkMode
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-input border-border/50 text-muted-foreground hover:bg-accent hover:text-foreground'
+              }`}
+            >
+              <Sun className="w-4 h-4" />
+              Light
+            </button>
+            <button
+              onClick={() => { if (!themeStore.darkMode) themeStore.toggleDarkMode(); }}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border text-sm font-medium transition-all ${
+                themeStore.darkMode
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-input border-border/50 text-muted-foreground hover:bg-accent hover:text-foreground'
+              }`}
+            >
+              <Moon className="w-4 h-4" />
+              Dark
+            </button>
+          </div>
+        </div>
 
         {/* Download Folder */}
         <div className="mb-6">

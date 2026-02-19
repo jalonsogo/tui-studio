@@ -240,9 +240,13 @@ export const THEME_NAMES: { value: ThemeName; label: string }[] = [
 
 const defaultAnsiColors = THEMES.default;
 
+const savedDarkMode = typeof window !== 'undefined'
+  ? localStorage.getItem('settings-dark-mode') !== 'false'
+  : true;
+
 export const useThemeStore = create<ThemeState>((set) => ({
   // Initial state
-  darkMode: true,
+  darkMode: savedDarkMode,
   colorMode: 'ansi16',
   currentTheme: 'dracula',
   ansiColors: { ...THEMES.dracula },
@@ -251,8 +255,8 @@ export const useThemeStore = create<ThemeState>((set) => ({
   toggleDarkMode: () => {
     set((state) => {
       const newDarkMode = !state.darkMode;
+      localStorage.setItem('settings-dark-mode', String(newDarkMode));
 
-      // Update document class
       if (newDarkMode) {
         document.documentElement.classList.add('dark');
       } else {
@@ -289,7 +293,11 @@ export const useThemeStore = create<ThemeState>((set) => ({
   },
 }));
 
-// Initialize dark mode on load
+// Apply saved dark/light mode on load
 if (typeof window !== 'undefined') {
-  document.documentElement.classList.add('dark');
+  if (savedDarkMode) {
+    document.documentElement.classList.add('dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+  }
 }
