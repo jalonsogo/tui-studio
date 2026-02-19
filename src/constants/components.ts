@@ -36,6 +36,7 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
       padding: 1,
     },
     defaultStyle: {
+      color: 'white',
       border: true,
       borderStyle: 'single',
       borderColor: 'white',
@@ -59,6 +60,7 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
       gap: 1,
     },
     defaultStyle: {
+      color: 'white',
       border: true,
       borderStyle: 'single',
       borderColor: 'white',
@@ -79,7 +81,9 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
       columnGap: 1,
       rowGap: 1,
     },
-    defaultStyle: {},
+    defaultStyle: {
+      color: 'white',
+    },
   },
 
   Spacer: {
@@ -114,8 +118,10 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
       type: 'none',
     },
     defaultStyle: {
+      color: 'white',
       border: true,
       borderStyle: 'single',
+      borderColor: 'white',
     },
     defaultEvents: {
       onChange: 'handleChange',
@@ -145,8 +151,10 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
       padding: 1,
     },
     defaultStyle: {
+      color: 'white',
       border: true,
-      borderStyle: 'rounded', // or 'single' for straight corners
+      borderStyle: 'rounded',
+      borderColor: 'white',
       bold: true,
     },
     defaultEvents: {
@@ -170,6 +178,7 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
       type: 'none',
     },
     defaultStyle: {
+      color: 'white',
       checkedColor: 'green',
       uncheckedColor: 'white',
       labelColor: 'white',
@@ -195,6 +204,7 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
       type: 'none',
     },
     defaultStyle: {
+      color: 'white',
       selectedColor: 'green',
       unselectedColor: 'white',
       labelColor: 'white',
@@ -218,8 +228,10 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
       type: 'none',
     },
     defaultStyle: {
+      color: 'white',
       border: true,
       borderStyle: 'single',
+      borderColor: 'white',
     },
     defaultEvents: {
       onChange: 'handleChange',
@@ -239,7 +251,9 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     defaultLayout: {
       type: 'none',
     },
-    defaultStyle: {},
+    defaultStyle: {
+      color: 'white',
+    },
     defaultEvents: {
       onChange: 'handleChange',
     },
@@ -260,7 +274,9 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     defaultLayout: {
       type: 'none',
     },
-    defaultStyle: {},
+    defaultStyle: {
+      color: 'white',
+    },
   },
 
   Spinner: {
@@ -273,7 +289,9 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     defaultLayout: {
       type: 'none',
     },
-    defaultStyle: {},
+    defaultStyle: {
+      color: 'white',
+    },
   },
 
   ProgressBar: {
@@ -291,8 +309,10 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
       type: 'none',
     },
     defaultStyle: {
+      color: 'white',
       border: true,
       borderStyle: 'single',
+      borderColor: 'white',
     },
   },
 
@@ -314,8 +334,10 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
       type: 'none',
     },
     defaultStyle: {
+      color: 'white',
       border: true,
       borderStyle: 'single',
+      borderColor: 'white',
     },
   },
 
@@ -340,8 +362,10 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
       direction: 'column',
     },
     defaultStyle: {
+      color: 'white',
       border: true,
       borderStyle: 'single',
+      borderColor: 'white',
     },
     defaultEvents: {
       onSelect: 'handleSelect',
@@ -379,7 +403,9 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
       type: 'flexbox',
       direction: 'column',
     },
-    defaultStyle: {},
+    defaultStyle: {
+      color: 'white',
+    },
   },
 
   // Navigation Components
@@ -404,8 +430,10 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
       direction: 'column',
     },
     defaultStyle: {
+      color: 'white',
       border: true,
       borderStyle: 'single',
+      borderColor: 'white',
     },
   },
 
@@ -427,7 +455,9 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
       type: 'flexbox',
       direction: 'column',
     },
-    defaultStyle: {},
+    defaultStyle: {
+      color: 'white',
+    },
   },
 
   Breadcrumb: {
@@ -449,7 +479,9 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
       direction: 'row',
       gap: 1,
     },
-    defaultStyle: {},
+    defaultStyle: {
+      color: 'white',
+    },
   },
 
   // Overlay Components
@@ -470,8 +502,10 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
       padding: 2,
     },
     defaultStyle: {
+      color: 'white',
       border: true,
       borderStyle: 'double',
+      borderColor: 'white',
       backgroundColor: 'black',
     },
   },
@@ -489,8 +523,10 @@ export const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
       padding: 1,
     },
     defaultStyle: {
+      color: 'white',
       border: true,
       borderStyle: 'rounded',
+      borderColor: 'white',
     },
   },
 
