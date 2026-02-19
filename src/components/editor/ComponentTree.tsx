@@ -1,6 +1,6 @@
 // Hierarchical component tree view
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   ChevronDown,
   ChevronRight,
@@ -35,6 +35,167 @@ import { useComponentStore, useSelectionStore } from '../../stores';
 import type { ComponentNode, ComponentType } from '../../types';
 import { dragStore } from '../../hooks/useDragAndDrop';
 import { COMPONENT_LIBRARY, canHaveChildren } from '../../constants/components';
+
+// In-memory style clipboard (module-level, shared across all TreeNodes)
+let styleClipboard: ComponentNode['style'] | null = null;
+
+// ── Context Menu ──────────────────────────────────────────────────────────────
+
+interface ContextMenuState {
+  x: number;
+  y: number;
+  nodeId: string;
+}
+
+interface ContextMenuProps {
+  state: ContextMenuState;
+  node: ComponentNode;
+  onClose: () => void;
+}
+
+function ContextMenu({ state, node, onClose }: ContextMenuProps) {
+  const componentStore = useComponentStore();
+  const selectionStore = useSelectionStore();
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close on outside click or Escape
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose();
+    };
+    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [onClose]);
+
+  // Clamp position to viewport
+  const [pos, setPos] = useState({ x: state.x, y: state.y });
+  useEffect(() => {
+    if (!menuRef.current) return;
+    const { width, height } = menuRef.current.getBoundingClientRect();
+    setPos({
+      x: Math.min(state.x, window.innerWidth  - width  - 8),
+      y: Math.min(state.y, window.innerHeight - height - 8),
+    });
+  }, [state.x, state.y]);
+
+  const run = (fn: () => void) => { fn(); onClose(); };
+
+  // ── Actions ────────────────────────────────────────────────────────────────
+
+  const handleCopy = () => run(() => {
+    // Dispatch the same copy event handled in App.tsx
+    selectionStore.select(node.id);
+    window.dispatchEvent(new CustomEvent('tree-context-copy', { detail: { id: node.id } }));
+  });
+
+  const handleCopyStyle = () => run(() => {
+    styleClipboard = { ...node.style };
+  });
+
+  const handlePasteStyle = () => run(() => {
+    if (!styleClipboard) return;
+    componentStore.updateComponent(node.id, { style: { ...node.style, ...styleClipboard } });
+  });
+
+  const wrapInBox = () => run(() => {
+    const parent = componentStore.getParent(node.id);
+    if (!parent) return;
+    const index = parent.children.findIndex(c => c.id === node.id);
+    const boxDef = COMPONENT_LIBRARY['Box'];
+    const newBoxId = componentStore.addComponent(parent.id, {
+      type: 'Box',
+      name: 'Box',
+      props:   { ...boxDef.defaultProps },
+      layout:  { ...boxDef.defaultLayout },
+      style:   { ...boxDef.defaultStyle },
+      events:  { ...boxDef.defaultEvents },
+      children: [],
+      locked: false,
+      hidden: false,
+      collapsed: false,
+    }, index);
+    if (newBoxId) {
+      componentStore.moveComponent(node.id, newBoxId);
+      selectionStore.select(newBoxId);
+    }
+  });
+
+  const handleRename = () => run(() => {
+    // Signal the TreeNode to start inline editing
+    window.dispatchEvent(new CustomEvent('tree-start-rename', { detail: { id: node.id } }));
+  });
+
+  const handleToggleVisible = () => run(() => {
+    componentStore.updateComponent(node.id, { hidden: !node.hidden });
+  });
+
+  const handleToggleLock = () => run(() => {
+    componentStore.updateComponent(node.id, { locked: !node.locked });
+  });
+
+  const handleDelete = () => run(() => {
+    if (node.id === 'root' || node.locked) return;
+    componentStore.removeComponent(node.id);
+    selectionStore.clearSelection();
+  });
+
+  const isRoot = node.id === 'root';
+
+  type Item =
+    | { type: 'item'; label: string; action: () => void; disabled?: boolean; destructive?: boolean }
+    | { type: 'sep' };
+
+  const items: Item[] = [
+    { type: 'item', label: 'Copy',                   action: handleCopy,          disabled: isRoot },
+    { type: 'item', label: 'Copy Style Properties',  action: handleCopyStyle },
+    { type: 'item', label: 'Paste Style Properties', action: handlePasteStyle,    disabled: !styleClipboard || isRoot },
+    { type: 'sep' },
+    { type: 'item', label: 'Group into Box',         action: wrapInBox,           disabled: isRoot },
+    { type: 'item', label: 'Rename',                 action: handleRename,        disabled: isRoot },
+    { type: 'sep' },
+    { type: 'item', label: 'Add to Box',             action: wrapInBox,           disabled: isRoot },
+    { type: 'sep' },
+    { type: 'item', label: node.hidden ? 'Show'  : 'Hide',   action: handleToggleVisible, disabled: isRoot },
+    { type: 'item', label: node.locked ? 'Unlock': 'Lock',   action: handleToggleLock },
+    { type: 'sep' },
+    { type: 'item', label: 'Delete',                 action: handleDelete,        disabled: isRoot || node.locked, destructive: true },
+  ];
+
+  return (
+    <div
+      ref={menuRef}
+      className="fixed z-[9999] w-52 bg-popover border border-border rounded-lg shadow-2xl py-1 text-sm"
+      style={{ left: pos.x, top: pos.y }}
+    >
+      {items.map((item, i) => {
+        if (item.type === 'sep') {
+          return <div key={i} className="my-1 border-t border-border/40" />;
+        }
+        return (
+          <button
+            key={i}
+            onClick={item.disabled ? undefined : item.action}
+            disabled={item.disabled}
+            className={`w-full text-left px-3 py-1.5 transition-colors ${
+              item.disabled
+                ? 'opacity-30 cursor-not-allowed'
+                : item.destructive
+                  ? 'hover:bg-destructive/20 text-destructive'
+                  : 'hover:bg-accent'
+            }`}
+          >
+            {item.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 // Map component types to their icons
 export function getComponentIcon(type: ComponentType) {
@@ -129,6 +290,7 @@ function TreeNode({ node, level, warningNodeIds }: { node: ComponentNode; level:
   const [insertBefore, setInsertBefore] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(node.name);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -136,6 +298,25 @@ function TreeNode({ node, level, warningNodeIds }: { node: ComponentNode; level:
       inputRef.current.select();
     }
   }, [isEditing]);
+
+  // Listen for rename triggered from context menu
+  useEffect(() => {
+    const handler = (e: Event) => {
+      if ((e as CustomEvent).detail?.id === node.id) {
+        setEditName(node.name);
+        setIsEditing(true);
+      }
+    };
+    window.addEventListener('tree-start-rename', handler);
+    return () => window.removeEventListener('tree-start-rename', handler);
+  }, [node.id, node.name]);
+
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY });
+    if (node.id !== 'root') selectionStore.select(node.id);
+  }, [node.id, selectionStore]);
 
   const startEditing = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -327,6 +508,7 @@ function TreeNode({ node, level, warningNodeIds }: { node: ComponentNode; level:
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
+        onContextMenu={handleContextMenu}
         className={`flex items-center gap-1 px-2 py-1 rounded cursor-grab group transition-colors ${
           isSelected ? 'bg-primary/20 border border-primary' : 'hover:bg-accent'
         } ${node.hidden ? 'opacity-50' : ''} ${
@@ -422,6 +604,15 @@ function TreeNode({ node, level, warningNodeIds }: { node: ComponentNode; level:
             <TreeNode key={child.id} node={child} level={level + 1} warningNodeIds={warningNodeIds} />
           ))}
         </div>
+      )}
+
+      {/* Context menu */}
+      {contextMenu && (
+        <ContextMenu
+          state={{ x: contextMenu.x, y: contextMenu.y, nodeId: node.id }}
+          node={node}
+          onClose={() => setContextMenu(null)}
+        />
       )}
     </div>
   );
