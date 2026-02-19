@@ -227,7 +227,7 @@ function AboutModal({ onClose }: { onClose: () => void }) {
         className="bg-card border border-border rounded-xl shadow-2xl p-8 w-96 flex flex-col items-center gap-4 text-center"
         onClick={e => e.stopPropagation()}
       >
-        <img src={darkMode ? '/favicon_white.svg' : '/favicon_dark.svg'} alt="TUIStudio" className="w-16 h-16" />
+        <img src={darkMode ? '/logo-tui-studio_dark.svg' : '/logo-tui-studio_light.svg'} alt="TUIStudio" className="w-16 h-16" />
         <div>
           <h2 className="text-base font-semibold">TUIStudio</h2>
           <p className="text-[11px] text-muted-foreground mt-0.5">Terminal UI Design Tool</p>
@@ -304,29 +304,26 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">
             Appearance
           </p>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-3">
+            <Sun className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            <span className={`text-sm ${!themeStore.darkMode ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>Light</span>
             <button
-              onClick={() => { if (themeStore.darkMode) themeStore.toggleDarkMode(); }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border text-sm font-medium transition-all ${
-                !themeStore.darkMode
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-input border-border/50 text-muted-foreground hover:bg-accent hover:text-foreground'
+              type="button"
+              role="switch"
+              aria-checked={themeStore.darkMode}
+              onClick={() => themeStore.toggleDarkMode()}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors cursor-pointer focus:outline-none ${
+                themeStore.darkMode ? 'bg-primary' : 'bg-input'
               }`}
             >
-              <Sun className="w-4 h-4" />
-              Light
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform ${
+                  themeStore.darkMode ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
             </button>
-            <button
-              onClick={() => { if (!themeStore.darkMode) themeStore.toggleDarkMode(); }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border text-sm font-medium transition-all ${
-                themeStore.darkMode
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-input border-border/50 text-muted-foreground hover:bg-accent hover:text-foreground'
-              }`}
-            >
-              <Moon className="w-4 h-4" />
-              Dark
-            </button>
+            <span className={`text-sm ${themeStore.darkMode ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>Dark</span>
+            <Moon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
           </div>
         </div>
 
@@ -648,7 +645,7 @@ export function Toolbar() {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-0.5">
             <img
-              src={themeStore.darkMode ? '/tui-studio_light.svg' : '/tui-studio_dark.svg'}
+              src={themeStore.darkMode ? '/logo-tui-studio_dark.svg' : '/logo-tui-studio_light.svg'}
               alt="TUIStudio"
               className="w-7 h-7"
             />

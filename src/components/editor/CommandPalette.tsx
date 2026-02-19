@@ -1,7 +1,7 @@
 // Command palette for quick access to commands and components
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, FileDown, Save, Palette, Package, Settings, Keyboard, Info } from 'lucide-react';
+import { Search, FileDown, Save, Palette, Package, Settings, Keyboard, Info, Sun, Moon } from 'lucide-react';
 import { useThemeStore } from '../../stores';
 import { COMPONENT_LIBRARY } from '../../constants/components';
 import { THEME_NAMES } from '../../stores/themeStore';
@@ -100,6 +100,17 @@ export function CommandPalette({ isOpen, onClose, onAddComponent }: CommandPalet
       icon: Info,
       action: () => {
         window.dispatchEvent(new Event('command-about'));
+        onClose();
+      },
+      category: 'action',
+    },
+    {
+      id: 'toggle-dark-mode',
+      label: themeStore.darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+      description: themeStore.darkMode ? 'Use light color scheme' : 'Use dark color scheme',
+      icon: themeStore.darkMode ? Sun : Moon,
+      action: () => {
+        themeStore.toggleDarkMode();
         onClose();
       },
       category: 'action',
