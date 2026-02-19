@@ -10,7 +10,16 @@ import { buildTuiData, saveTuiData, openTuiFile } from '../../utils/fileOps';
 
 // ── Save dialog ───────────────────────────────────────────────────────────────
 
+function useEscapeKey(onClose: () => void) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+}
+
 function SaveDialog({ onClose }: { onClose: () => void }) {
+  useEscapeKey(onClose);
   const initial = buildTuiData();
   const [filename, setFilename] = useState(initial?.suggestedName ?? 'untitled.tui');
   const json = initial?.json ?? '';
@@ -99,6 +108,7 @@ const SHORTCUT_GROUPS = [
 ];
 
 function HelpModal({ onClose }: { onClose: () => void }) {
+  useEscapeKey(onClose);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
       <div
@@ -139,6 +149,7 @@ function HelpModal({ onClose }: { onClose: () => void }) {
 // ── About modal ───────────────────────────────────────────────────────────────
 
 function AboutModal({ onClose }: { onClose: () => void }) {
+  useEscapeKey(onClose);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
       <div
