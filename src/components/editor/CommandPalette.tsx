@@ -1,7 +1,7 @@
 // Command palette for quick access to commands and components
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, FileDown, Save, Palette, Package, Settings } from 'lucide-react';
+import { Search, FileDown, Save, Palette, Package, Settings, Keyboard, Info } from 'lucide-react';
 import { useThemeStore } from '../../stores';
 import { COMPONENT_LIBRARY } from '../../constants/components';
 import { THEME_NAMES } from '../../stores/themeStore';
@@ -80,6 +80,29 @@ export function CommandPalette({ isOpen, onClose, onAddComponent }: CommandPalet
       },
       category: 'action',
       shortcut: 'Ctrl+K',
+    },
+    {
+      id: 'help',
+      label: 'Keyboard Shortcuts',
+      description: 'View all keyboard shortcuts',
+      icon: Keyboard,
+      action: () => {
+        window.dispatchEvent(new Event('command-help'));
+        onClose();
+      },
+      category: 'action',
+      shortcut: 'Ctrl+?',
+    },
+    {
+      id: 'about',
+      label: 'About TUIStudio',
+      description: 'Version info and links',
+      icon: Info,
+      action: () => {
+        window.dispatchEvent(new Event('command-about'));
+        onClose();
+      },
+      category: 'action',
     },
 
     // Themes
