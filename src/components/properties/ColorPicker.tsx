@@ -59,6 +59,10 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
     ? (value.startsWith('#') ? value : (activeTheme[value as keyof typeof activeTheme] || null))
     : null;
 
+  // When no color is set, show what actually renders (editor foreground) at reduced
+  // opacity so users can distinguish "default" from an explicitly-set white.
+  const swatchColor = swatchHex || 'hsl(var(--foreground))';
+
   // Hex input — while focused use local state, otherwise derived
   const hexDisplay = hexFocused ? hexText : derivedHex;
 
@@ -154,13 +158,14 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
           onClick={() => setIsOpen(!isOpen)}
           title="Choose color"
           className="w-5 h-5 rounded-sm border border-border/50 flex-shrink-0 overflow-hidden relative"
-          style={{
-            background: 'repeating-conic-gradient(#555 0% 25%, #333 0% 50%) 0 0 / 6px 6px',
-          }}
         >
-          {swatchHex && (
-            <div className="absolute inset-0" style={{ backgroundColor: swatchHex }} />
-          )}
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundColor: swatchColor,
+              opacity: swatchHex ? 1 : 0.45,
+            }}
+          />
         </button>
 
         {/* Hex input */}

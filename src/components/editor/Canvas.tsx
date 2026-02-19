@@ -371,7 +371,7 @@ const ComponentRenderer = memo(function ComponentRenderer({ node, cellWidth, cel
       brightGreen: 'text-green-400', brightYellow: 'text-yellow-400',
       brightBlue: 'text-blue-400', brightMagenta: 'text-pink-400', brightCyan: 'text-cyan-400',
     };
-    const getColorClass = (color: string) => colorMap[color] || 'text-white';
+    const getColorClass = (color: string) => colorMap[color] || 'text-foreground';
 
     switch (node.type) {
       case 'Text': {
@@ -746,35 +746,47 @@ const ComponentRenderer = memo(function ComponentRenderer({ node, cellWidth, cel
   }, [resizing, cellWidth, cellHeight, zoom, node.id, componentStore]);
 
   const hasBorder = node.style.border;
-  const borderColor = hasBorder ? (getColor(node.style.borderColor) || activeTheme.white) : null;
+  const borderColor = hasBorder ? (getColor(node.style.borderColor) || 'hsl(var(--foreground))') : null;
   const showBorderTop    = node.style.borderTop    !== false;
   const showBorderRight  = node.style.borderRight  !== false;
   const showBorderBottom = node.style.borderBottom !== false;
   const showBorderLeft   = node.style.borderLeft   !== false;
   const hasCorners       = node.style.borderCorners !== false;
-  const isRoundedBorder  = node.style.borderStyle === 'rounded';
+
+  // Map TUI border styles to CSS border width + style
+  const cssBorderStyle = (() => {
+    switch (node.style.borderStyle) {
+      case 'double':  return { width: '3px', style: 'double' };
+      case 'bold':    return { width: '2px', style: 'solid' };
+      case 'rounded': return { width: '1px', style: 'solid' };
+      default:        return { width: '1px', style: 'solid' };
+    }
+  })();
+  const borderDecl = `${cssBorderStyle.width} ${cssBorderStyle.style} ${borderColor}`;
+  const isRoundedBorder = node.style.borderStyle === 'rounded';
 
   let borderStyleProps: CSSProperties = { border: 'none' };
   if (hasBorder && borderColor) {
     if (hasCorners) {
       borderStyleProps = {
-        borderTop:    showBorderTop    ? `1px solid ${borderColor}` : 'none',
-        borderRight:  showBorderRight  ? `1px solid ${borderColor}` : 'none',
-        borderBottom: showBorderBottom ? `1px solid ${borderColor}` : 'none',
-        borderLeft:   showBorderLeft   ? `1px solid ${borderColor}` : 'none',
+        borderTop:    showBorderTop    ? borderDecl : 'none',
+        borderRight:  showBorderRight  ? borderDecl : 'none',
+        borderBottom: showBorderBottom ? borderDecl : 'none',
+        borderLeft:   showBorderLeft   ? borderDecl : 'none',
         boxSizing: 'border-box',
         ...(isRoundedBorder ? { borderRadius: `${Math.round(cellHeight * zoom * 0.4)}px` } : {}),
       };
     } else {
       const cw = cellWidth * zoom;
       const ch = cellHeight * zoom;
+      const lw = cssBorderStyle.width; // line width for gradient thickness
       const images: string[] = [];
       const sizes: string[] = [];
       const positions: string[] = [];
-      if (showBorderTop)    { images.push(`linear-gradient(${borderColor},${borderColor})`); sizes.push(`calc(100% - ${2*cw}px) 1px`); positions.push(`${cw}px 0`); }
-      if (showBorderBottom) { images.push(`linear-gradient(${borderColor},${borderColor})`); sizes.push(`calc(100% - ${2*cw}px) 1px`); positions.push(`${cw}px 100%`); }
-      if (showBorderLeft)   { images.push(`linear-gradient(${borderColor},${borderColor})`); sizes.push(`1px calc(100% - ${2*ch}px)`); positions.push(`0 ${ch}px`); }
-      if (showBorderRight)  { images.push(`linear-gradient(${borderColor},${borderColor})`); sizes.push(`1px calc(100% - ${2*ch}px)`); positions.push(`100% ${ch}px`); }
+      if (showBorderTop)    { images.push(`linear-gradient(${borderColor},${borderColor})`); sizes.push(`calc(100% - ${2*cw}px) ${lw}`); positions.push(`${cw}px 0`); }
+      if (showBorderBottom) { images.push(`linear-gradient(${borderColor},${borderColor})`); sizes.push(`calc(100% - ${2*cw}px) ${lw}`); positions.push(`${cw}px 100%`); }
+      if (showBorderLeft)   { images.push(`linear-gradient(${borderColor},${borderColor})`); sizes.push(`${lw} calc(100% - ${2*ch}px)`); positions.push(`0 ${ch}px`); }
+      if (showBorderRight)  { images.push(`linear-gradient(${borderColor},${borderColor})`); sizes.push(`${lw} calc(100% - ${2*ch}px)`); positions.push(`100% ${ch}px`); }
       borderStyleProps = {
         backgroundImage: images.join(', '),
         backgroundSize: sizes.join(', '),
@@ -934,7 +946,7 @@ const ComponentRenderer = memo(function ComponentRenderer({ node, cellWidth, cel
           top: `${y}px`,
           width: `${layout.width * cellWidth * zoom}px`,
           height: `${layout.height * cellHeight * zoom}px`,
-          color: getColor(node.style.color) || activeTheme.white,
+          color: getColor(node.style.color) || 'inherit',
           backgroundColor: getColor(node.style.backgroundColor),
           fontWeight: node.style.bold ? 'bold' : 'normal',
           fontStyle: node.style.italic ? 'italic' : 'normal',
