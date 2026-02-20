@@ -165,6 +165,12 @@ function App() {
         return;
       }
 
+      // Escape — clear selection
+      if (e.key === 'Escape' && !isTyping) {
+        selectionStore.clearSelection();
+        return;
+      }
+
       // Delete selected component (Backspace or Delete)
       if ((e.key === 'Backspace' || e.key === 'Delete') && !isTyping && !commandPaletteOpen) {
         const selectedIds = Array.from(selectionStore.selectedIds);

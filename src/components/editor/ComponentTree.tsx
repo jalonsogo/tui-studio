@@ -104,26 +104,21 @@ function ContextMenu({ state, node, onClose }: ContextMenuProps) {
   });
 
   const wrapInBox = () => run(() => {
-    const parent = componentStore.getParent(node.id);
-    if (!parent) return;
-    const index = parent.children.findIndex(c => c.id === node.id);
+    const selectedIds = Array.from(selectionStore.selectedIds);
+    const idsToGroup = selectedIds.length > 1 ? selectedIds : [node.id];
     const boxDef = COMPONENT_LIBRARY['Box'];
-    const newBoxId = componentStore.addComponent(parent.id, {
+    const newBoxId = componentStore.groupComponents(idsToGroup, {
       type: 'Box',
       name: 'Box',
-      props:   { ...boxDef.defaultProps },
-      layout:  { ...boxDef.defaultLayout },
-      style:   { ...boxDef.defaultStyle },
-      events:  { ...boxDef.defaultEvents },
-      children: [],
+      props:    { ...boxDef.defaultProps },
+      layout:   { ...boxDef.defaultLayout },
+      style:    { ...boxDef.defaultStyle },
+      events:   { ...boxDef.defaultEvents },
       locked: false,
       hidden: false,
       collapsed: false,
-    }, index);
-    if (newBoxId) {
-      componentStore.moveComponent(node.id, newBoxId);
-      selectionStore.select(newBoxId);
-    }
+    });
+    if (newBoxId) selectionStore.select(newBoxId);
   });
 
   const handleRename = () => run(() => {
@@ -145,6 +140,20 @@ function ContextMenu({ state, node, onClose }: ContextMenuProps) {
     selectionStore.clearSelection();
   });
 
+  const selectedContainerIds = Array.from(selectionStore.selectedIds).filter(id => {
+    const c = componentStore.getComponent(id);
+    return c && c.children.length > 0;
+  });
+
+  const canUngroup = node.id !== 'root' && (selectedContainerIds.length > 0 || node.children.length > 0);
+
+  const ungroup = () => run(() => {
+    const ids = selectedContainerIds.length > 0 ? selectedContainerIds : [node.id];
+    const childIds = componentStore.ungroupComponents(ids);
+    if (childIds.length === 1) selectionStore.select(childIds[0]);
+    else if (childIds.length > 1) selectionStore.selectMultiple(childIds);
+  });
+
   const isRoot = node.id === 'root';
 
   type Item =
@@ -157,9 +166,8 @@ function ContextMenu({ state, node, onClose }: ContextMenuProps) {
     { type: 'item', label: 'Paste Style Properties', action: handlePasteStyle,    disabled: !styleClipboard || isRoot },
     { type: 'sep' },
     { type: 'item', label: 'Group into Box',         action: wrapInBox,           disabled: isRoot },
+    { type: 'item', label: 'Ungroup',                action: ungroup,             disabled: !canUngroup },
     { type: 'item', label: 'Rename',                 action: handleRename,        disabled: isRoot },
-    { type: 'sep' },
-    { type: 'item', label: 'Add to Box',             action: wrapInBox,           disabled: isRoot },
     { type: 'sep' },
     { type: 'item', label: node.hidden ? 'Show'  : 'Hide',   action: handleToggleVisible, disabled: isRoot },
     { type: 'item', label: node.locked ? 'Unlock': 'Lock',   action: handleToggleLock },
@@ -338,7 +346,7 @@ function TreeNode({ node, level, warningNodeIds }: { node: ComponentNode; level:
     e.preventDefault();
     e.stopPropagation();
     setContextMenu({ x: e.clientX, y: e.clientY });
-    if (node.id !== 'root') selectionStore.select(node.id);
+    if (node.id !== 'root' && !selectionStore.isSelected(node.id)) selectionStore.select(node.id);
   }, [node.id, selectionStore]);
 
   const startEditing = (e: React.MouseEvent) => {

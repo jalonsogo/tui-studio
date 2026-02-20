@@ -995,8 +995,8 @@ const ComponentRenderer = memo(function ComponentRenderer({ node, cellWidth, cel
         onClick={(e) => {
           e.stopPropagation();
           if (node.id !== 'root') {
-            selectionStore.select(node.id);
-          } else {
+            selectionStore.select(node.id, e.shiftKey);
+          } else if (!e.shiftKey) {
             selectionStore.clearSelection();
           }
         }}
@@ -1004,7 +1004,7 @@ const ComponentRenderer = memo(function ComponentRenderer({ node, cellWidth, cel
           e.preventDefault();
           e.stopPropagation();
           if (node.id !== 'root') {
-            selectionStore.select(node.id);
+            if (!selectionStore.isSelected(node.id)) selectionStore.select(node.id);
             window.dispatchEvent(new CustomEvent('canvas-context-menu', {
               detail: { id: node.id, x: e.clientX, y: e.clientY },
             }));

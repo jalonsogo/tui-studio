@@ -5,7 +5,13 @@ All notable changes to TUIStudio are documented here.
 ## [0.3.0] - 2026-02-20
 
 ### Added
-- **Multi-select in Layers panel** — Shift-click components in the layer tree to build a multi-selection for batch operations.
+- **Multi-select** — Shift-click components in the Layers panel or on the Canvas to build a multi-selection for batch operations.
+- **Group into Box (multi-select)** — Shift-select sibling components, then right-click → "Group into Box" to wrap all selected items into a single Box container.
+- **Ungroup** — Right-click any Box with children → "Ungroup" promotes all children to the parent level and removes the container. Works on multiple selected groups at once.
+- **Escape to deselect** — Press Esc to clear the current selection.
+
+### Removed
+- **"Add to Box"** context menu item (was a duplicate of "Group into Box").
 
 ## [0.2.0] - 2026-02-19
 

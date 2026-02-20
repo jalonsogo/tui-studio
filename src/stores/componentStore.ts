@@ -22,6 +22,8 @@ interface ComponentState {
   updateComponent: (id: string, updates: Partial<ComponentNode>) => void;
   moveComponent: (id: string, newParentId: string, index?: number) => void;
   duplicateComponent: (id: string) => string | null;
+  groupComponents: (ids: string[], boxData: Omit<ComponentNode, 'id' | 'children'>) => string | null;
+  ungroupComponents: (ids: string[]) => string[];
 
   // Actions - Properties
   updateProps: (id: string, props: Partial<ComponentNode['props']>) => void;
@@ -224,6 +226,59 @@ export const useComponentStore = create<ComponentState>((set, get) => ({
 
     get().saveHistory();
     return cloned.id;
+  },
+
+  // Group multiple components into a new Box
+  groupComponents: (ids, boxData) => {
+    const { root } = get();
+    if (!root || ids.length === 0) return null;
+
+    const newRoot = cloneNode(root);
+
+    // All ids must share the same parent
+    const parents = ids.map(id => findParentNode(newRoot, id));
+    const parentId = parents[0]?.id;
+    if (!parentId || parents.some(p => p?.id !== parentId)) return null;
+
+    const parent = findNodeById(newRoot, parentId)!;
+
+    // Insert Box at the earliest position of the selected nodes
+    const indices = ids.map(id => parent.children.findIndex(c => c.id === id));
+    const insertIndex = Math.min(...indices);
+
+    // Extract selected nodes in document order
+    const ordered = parent.children.filter(c => ids.includes(c.id));
+    parent.children = parent.children.filter(c => !ids.includes(c.id));
+
+    const newBox: ComponentNode = { ...boxData, id: generateComponentId(), children: ordered };
+    parent.children.splice(insertIndex, 0, newBox);
+
+    set({ root: newRoot, components: flattenTree(newRoot) });
+    get().saveHistory();
+    return newBox.id;
+  },
+
+  // Ungroup containers: promote children to parent, remove containers
+  ungroupComponents: (ids) => {
+    const { root } = get();
+    if (!root || ids.length === 0) return [];
+
+    const newRoot = cloneNode(root);
+    const allChildIds: string[] = [];
+
+    for (const id of ids) {
+      const node = findNodeById(newRoot, id);
+      const parent = findParentNode(newRoot, id);
+      if (!node || !parent) continue;
+
+      const index = parent.children.findIndex(c => c.id === id);
+      allChildIds.push(...node.children.map(c => c.id));
+      parent.children.splice(index, 1, ...node.children);
+    }
+
+    set({ root: newRoot, components: flattenTree(newRoot) });
+    get().saveHistory();
+    return allChildIds;
   },
 
   // Update props
