@@ -182,9 +182,10 @@ const TYPE_BADGE: Record<string, string> = {
   feature:     'bg-primary/15 text-primary',
   improvement: 'bg-yellow-500/15 text-yellow-500',
   fix:         'bg-red-500/15 text-red-400',
+  removed:     'bg-muted text-muted-foreground',
 };
 const TYPE_LABEL: Record<string, string> = {
-  feature: 'New', improvement: 'Improved', fix: 'Fixed',
+  feature: 'New', improvement: 'Improved', fix: 'Fixed', removed: 'Removed',
 };
 
 function ChangelogModal({ onClose }: { onClose: () => void }) {
