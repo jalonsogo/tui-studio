@@ -19,6 +19,8 @@ export function exportToCode(root: ComponentNode | null, format: string): string
       return exportToBlessed(root);
     case 'textual':
       return exportToTextual(root);
+    case 'ratatui':
+      return exportToRatatui(root);
     default:
       return `// Unsupported export format: ${format}`;
   }
@@ -460,6 +462,90 @@ function generateTextualComponents(node: ComponentNode, indent: number): string 
   let result = '';
   for (const child of node.children) result += generateTextualComponents(child, indent);
   return result || `${spaces}yield Static("${node.type}")\n`;
+}
+
+// ── Ratatui ───────────────────────────────────────────────────────────────────
+
+function exportToRatatui(node: ComponentNode): string {
+  return `use ratatui::{
+    crossterm::event::{self, KeyCode, KeyEvent},
+    layout::{Alignment, Constraint, Direction, Flex, Layout},
+    style::{Color, Modifier, Style},
+    text::{Line, Span, Text},
+    widgets::{Block, Borders, Paragraph, Wrap},
+    Frame,
+};
+use ratatui::prelude::*;
+
+#[derive(Clone, Copy)]
+enum AppState {
+    Running,
+    Quit,
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Enable raw mode and enter alternate screen
+    let mut terminal = ratatui::init();
+    let app_state = AppState::Running;
+
+    let result = run_app(&mut terminal, app_state);
+
+    // Restore terminal
+    ratatui::restore();
+    result
+}
+
+fn run_app(
+    terminal: &mut ratatui::Terminal<ratatui::backend::CrosstermBackend<std::io::Stdout>>,
+    mut app_state: AppState,
+) -> Result<(), Box<dyn std::error::Error>> {
+    while app_state != AppState::Quit {
+        terminal.draw(|f| ui(f, app_state))?;
+
+        if let event::Event::Key(key) = event::event()? {
+            match key.code {
+                KeyCode::Char('q') | KeyCode::Char('c') if key.modifiers == event::KeyModifiers::CONTROL => {
+                    app_state = AppState::Quit;
+                }
+                _ => {}
+            }
+        }
+    }
+    Ok(())
+}
+
+fn ui(f: &mut Frame, app_state: AppState) {
+    // Generated UI
+${generateRatatuiUI(node, 1)}
+}
+`;
+}
+
+function generateRatatuiUI(node: ComponentNode, indent: number): string {
+  const spaces = '  '.repeat(indent);
+  if (node.type === 'Text') {
+    const content = (node.props.content as string) || 'Text';
+    return `${spaces}let paragraph = Paragraph::new("${escRustString(content)}");\n${spaces}f.render_widget(paragraph, f.size());\n`;
+  }
+  if (node.type === 'Button') {
+    const label = (node.props.label as string) || 'Button';
+    return `${spaces}let button = Paragraph::new("${escRustString(label)}")
+${spaces}    .block(Block::bordered().title("Button"));
+${spaces}f.render_widget(button, f.size());\n`;
+  }
+
+  // Default: render a block for containers
+  let result = `${spaces}let block = Block::bordered()${node.name ? `.title("${escRustString(node.name)}")` : ''};
+${spaces}f.render_widget(block, f.size());
+`;
+  for (const child of node.children) {
+    result += generateRatatuiUI(child, indent);
+  }
+  return result;
+}
+
+function escRustString(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
 }
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
