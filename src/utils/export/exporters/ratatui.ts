@@ -135,8 +135,8 @@ function generateRatatuiNode(node: ComponentNode, indent: number, areaVar: strin
   }
 
   if (node.type === 'TextInput') {
-    const value = ((node.props.value as string) || (node.props.placeholder as string) || '') + '_';
-    let widget = `Paragraph::new(${escRust(value)}).style(${ratatuiStyle(node)})`;
+    const text = ratatuiTextInputText(node);
+    let widget = `Paragraph::new(${escRust(text)}).style(${ratatuiStyle(node)})`;
     if (node.style.border) widget += `.block(${ratatuiBlock(node)})`;
     return `${sp}frame.render_widget(${widget}, ${areaVar});\n`;
   }
@@ -243,6 +243,13 @@ function ratatuiStyle(node: ComponentNode): string {
   return style;
 }
 
+function ratatuiTextInputText(node: ComponentNode): string {
+  const placeholder = (node.props.placeholder as string) || '';
+  const value = (node.props.value as string) || '';
+  const display = value || placeholder;
+  return ` ${display}_ `;
+}
+
 function ratatuiInlineText(node: ComponentNode): string {
   switch (node.type) {
     case 'Checkbox': {
@@ -251,16 +258,20 @@ function ratatuiInlineText(node: ComponentNode): string {
       return `[${icon}] ${(node.props.label as string) || 'Checkbox'}`;
     }
     case 'Radio': {
-      const selected = !!node.props.checked;
-      const icon = selected ? ((node.props.selectedIcon as string) || '●') : ((node.props.unselectedIcon as string) || '○');
+      const selected = !!node.props.checked || !!(node.props as any).selected;
+      const icon = selected ? ((node.props.selectedIcon as string) || '•') : ((node.props.unselectedIcon as string) || ' ');
       return `(${icon}) ${(node.props.label as string) || 'Radio'}`;
     }
-    case 'Toggle':
-      return `${node.props.checked ? '[ON ]' : '[OFF]'} ${(node.props.label as string) || 'Toggle'}`;
+    case 'Toggle': {
+      const checked = !!node.props.checked;
+      const label = (node.props.label as string) || 'Toggle';
+      return `${checked ? '[ON ]' : '[OFF]'} ${label}`;
+    }
     case 'Select': {
-      const options = (node.props.options as string[]) || ['Option 1'];
+      const options = ((node.props.options as string[]) || (node.props.items as string[]) || ['Option 1']);
       const idx = Number(node.props.selectedIndex ?? 0);
-      return `${options[idx] || options[0] || 'Select'} ▼`;
+      const selected = options[idx] || options[0] || 'Select...';
+      return `${selected} ▼`;
     }
     case 'Spinner':
       return '⠋ Loading...';
@@ -270,7 +281,7 @@ function ratatuiInlineText(node: ComponentNode): string {
     }
     default:
       return node.type;
-    }
+  }
 }
 
 function ratatuiListItems(node: ComponentNode): string {
