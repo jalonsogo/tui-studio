@@ -42,10 +42,22 @@ function generateRatatuiNode(node: ComponentNode, indent: number, areaVar: strin
   if (node.type === 'Screen' || node.type === 'Box' || node.type === 'Grid' || node.type === 'Modal') {
     let out = '';
     let targetArea = areaVar;
+
+    if (node.type === 'Modal') {
+      const modalW = typeof node.props.width === 'number' ? node.props.width : 40;
+      const modalH = typeof node.props.height === 'number' ? node.props.height : 12;
+      targetArea = `modal_${areaVar.replace(/[^a-zA-Z0-9_]/g, '_')}`;
+      out += `${sp}let ${targetArea} = Rect::new(\n`;
+      out += `${sp}    ${areaVar}.x + (${areaVar}.width.saturating_sub(${modalW})) / 2,\n`;
+      out += `${sp}    ${areaVar}.y + (${areaVar}.height.saturating_sub(${modalH})) / 2,\n`;
+      out += `${sp}    ${modalW},\n`;
+      out += `${sp}    ${modalH},\n`;
+      out += `${sp});\n`;
+    }
     if (node.type !== 'Screen' && node.style.border) {
       out += `${sp}let block = ${ratatuiBlock(node)};\n`;
-      out += `${sp}let inner = block.inner(${areaVar});\n`;
-      out += `${sp}frame.render_widget(block, ${areaVar});\n`;
+      out += `${sp}let inner = block.inner(${targetArea});\n`;
+      out += `${sp}frame.render_widget(block, ${targetArea});\n`;
       targetArea = 'inner';
     }
 
@@ -64,6 +76,30 @@ function generateRatatuiNode(node: ComponentNode, indent: number, areaVar: strin
       return out;
     }
 
+    if (node.type === 'Grid') {
+      const columns = Math.max(1, Number(node.layout.columns ?? 2));
+      const rows = Math.max(1, Number(node.layout.rows ?? Math.ceil(node.children.length / columns)));
+      const rowChunks = `grid_rows_${targetArea.replace(/[^a-zA-Z0-9_]/g, '_')}`;
+      out += `${sp}let ${rowChunks} = Layout::default()\n`;
+      out += `${sp}    .direction(Direction::Vertical)\n`;
+      out += `${sp}    .constraints([${Array.from({ length: rows }, () => 'Constraint::Fill(1)').join(', ')}])\n`;
+      out += `${sp}    .split(${targetArea});\n`;
+      for (let row = 0; row < rows; row++) {
+        const rowArea = `${rowChunks}[${row}]`;
+        const colChunks = `grid_cols_${targetArea.replace(/[^a-zA-Z0-9_]/g, '_')}_${row}`;
+        out += `${sp}let ${colChunks} = Layout::default()\n`;
+        out += `${sp}    .direction(Direction::Horizontal)\n`;
+        out += `${sp}    .constraints([${Array.from({ length: columns }, () => 'Constraint::Fill(1)').join(', ')}])\n`;
+        out += `${sp}    .split(${rowArea});\n`;
+        for (let col = 0; col < columns; col++) {
+          const childIndex = row * columns + col;
+          const child = node.children[childIndex];
+          if (child) out += generateRatatuiNode(child, indent, `${colChunks}[${col}]`);
+        }
+      }
+      return out;
+    }
+
     const dir = node.layout.direction === 'row' ? 'Horizontal' : 'Vertical';
     const axis: 'width' | 'height' = node.layout.direction === 'row' ? 'width' : 'height';
     const chunks = `chunks_${targetArea.replace(/[^a-zA-Z0-9_]/g, '_')}`;
@@ -78,7 +114,7 @@ function generateRatatuiNode(node: ComponentNode, indent: number, areaVar: strin
     return out;
   }
 
-  if (node.type === 'Spacer') return '';
+  if (node.type === 'Spacer') return `${sp}// Spacer consumes layout space via constraints only\n`;
 
   if (node.type === 'Text') {
     const content = (node.props.content as string) || 'Text';
@@ -149,9 +185,11 @@ function generateRatatuiNode(node: ComponentNode, indent: number, areaVar: strin
 }
 
 function ratatuiConstraint(node: ComponentNode, axis: 'width' | 'height'): string {
+  if (node.type === 'Spacer') return 'Constraint::Fill(1)';
   const value = node.props[axis];
   if (typeof value === 'number') return `Constraint::Length(${value})`;
   if (value === 'fill') return 'Constraint::Fill(1)';
+  if (value === 'auto') return 'Constraint::Min(0)';
   return 'Constraint::Min(0)';
 }
 
