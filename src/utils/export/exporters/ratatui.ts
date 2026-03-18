@@ -160,11 +160,12 @@ function generateRatatuiNode(node: ComponentNode, indent: number, areaVar: strin
     const items = ratatuiListItems(node);
     let widget = `List::new(vec![${items}]).style(${ratatuiStyle(node)})`;
     if (node.style.border) widget += `.block(${ratatuiBlock(node)})`;
+    widget += `.highlight_symbol(${escRust(ratatuiHighlightSymbol(node))})`;
     return `${sp}frame.render_widget(${widget}, ${areaVar});\n`;
   }
 
   if (node.type === 'Tabs') {
-    const tabs = ((node.props.tabs as any[]) || []).map((tab: any) => typeof tab === 'string' ? tab : (tab.label || 'Tab'));
+    const tabs = ratatuiTabTitles(node);
     let widget = `Tabs::new(vec![${tabs.map(t => escRust(t)).join(', ')}]).select(${Number(node.props.activeTab ?? 0)}).style(${ratatuiStyle(node)}).highlight_style(Style::default().add_modifier(Modifier::BOLD))`;
     if (node.style.border) widget += `.block(${ratatuiBlock(node)})`;
     return `${sp}frame.render_widget(${widget}, ${areaVar});\n`;
@@ -172,9 +173,7 @@ function generateRatatuiNode(node: ComponentNode, indent: number, areaVar: strin
 
   if (node.type === 'Table') {
     const cols = ((node.props.columns as string[]) || ['Column 1', 'Column 2']).map(c => escRust(c)).join(', ');
-    const rows = ((node.props.rows as string[][]) || [])
-      .map(row => `Row::new(vec![${row.map(cell => escRust(String(cell))).join(', ')}])`)
-      .join(', ');
+    const rows = ratatuiTableRows(node);
     const widths = ((node.props.columns as string[]) || ['a', 'b']).map(() => 'Constraint::Fill(1)').join(', ');
     let widget = `Table::new(vec![${rows}], [${widths}]).header(Row::new(vec![${cols}]).style(Style::default().add_modifier(Modifier::BOLD))).style(${ratatuiStyle(node)})`;
     if (node.style.border) widget += `.block(${ratatuiBlock(node)})`;
@@ -285,24 +284,52 @@ function ratatuiInlineText(node: ComponentNode): string {
 }
 
 function ratatuiListItems(node: ComponentNode): string {
+  const selectedIndex = Number(node.props.selectedIndex ?? 0);
   if (node.type === 'Tree') {
     const flat: string[] = [];
     const walk = (item: any, depth: number) => {
       const d = typeof item === 'string' ? { label: item, children: [] } : item;
-      const prefix = `${'  '.repeat(depth)}${depth > 0 ? '├─ ' : ''}`;
+      const icon = d.icon ? `${d.icon} ` : '';
+      const marker = d.children && d.children.length > 0 ? (d.expanded === false ? '▸ ' : '▾ ') : '';
+      const prefix = `${'  '.repeat(depth)}${depth > 0 ? '├─ ' : ''}${marker}${icon}`;
       flat.push(`ListItem::new(${escRust(prefix + (d.label || 'Item'))})`);
+      if (d.expanded === false) return;
       (d.children || []).forEach((child: any) => walk(child, depth + 1));
     };
     (((node.props.items as any[]) || [])).forEach((item: any) => walk(item, 0));
     return flat.join(', ');
   }
-  const items = ((node.props.items as any[]) || []).map((item: any) => {
+  const items = ((node.props.items as any[]) || []).map((item: any, index: number) => {
     const d = typeof item === 'string' ? { label: item, icon: node.type === 'List' ? '•' : '' } : item;
     const prefix = d.icon ? `${d.icon} ` : '';
     const hotkey = d.hotkey ? `  ${d.hotkey}` : '';
-    return `ListItem::new(${escRust(prefix + (d.label || 'Item') + hotkey)})`;
+    const selected = index === selectedIndex;
+    const label = `${selected ? '▶ ' : '  '}${prefix}${d.label || 'Item'}${hotkey}`;
+    return `ListItem::new(${escRust(label)})`;
   });
   return items.join(', ');
+}
+
+function ratatuiHighlightSymbol(node: ComponentNode): string {
+  return node.type === 'List' || node.type === 'Menu' ? '▶ ' : '';
+}
+
+function ratatuiTabTitles(node: ComponentNode): string[] {
+  return ((node.props.tabs as any[]) || []).map((tab: any) => {
+    if (typeof tab === 'string') return tab;
+    const icon = tab.icon ? `${tab.icon} ` : '';
+    const status = tab.status ? ' ●' : '';
+    const hotkey = tab.hotkey ? ` ${tab.hotkey}` : '';
+    return `${icon}${tab.label || 'Tab'}${status}${hotkey}`;
+  });
+}
+
+function ratatuiTableRows(node: ComponentNode): string {
+  const columns = (node.props.columns as string[]) || ['Column 1', 'Column 2'];
+  const rows = (node.props.rows as string[][]) || [];
+  return rows
+    .map(row => `Row::new(vec![${columns.map((_, ci) => escRust(String(row[ci] || ''))).join(', ')}])`)
+    .join(', ');
 }
 
 function escRust(s: string): string {
