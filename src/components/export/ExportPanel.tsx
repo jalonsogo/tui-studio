@@ -143,6 +143,7 @@ export function ExportPanel() {
               <option value="bubbletea">Bubble Tea (Go)</option>
               <option value="blessed">Blessed (Node.js)</option>
               <option value="textual">Textual (Python)</option>
+              <option value="ratatui">Ratatui (Rust)</option>
               <option value="html">HTML + CSS</option>
             </select>
           </div>
@@ -256,6 +257,8 @@ function getCodeExtension(format: string): string {
       return '.js';
     case 'textual':
       return '.py';
+    case 'ratatui':
+      return '.rs';
     case 'html':
       return '.html';
     default:
