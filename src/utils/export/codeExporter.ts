@@ -1,6 +1,7 @@
 // Code generation for different TUI frameworks
 
 import type { ComponentNode } from '../../types';
+import { exportToRatatui } from './exporters/ratatui';
 
 /**
  * Export design to framework-specific code
@@ -19,6 +20,8 @@ export function exportToCode(root: ComponentNode | null, format: string): string
       return exportToBlessed(root);
     case 'textual':
       return exportToTextual(root);
+    case 'ratatui':
+      return exportToRatatui(root);
     default:
       return `// Unsupported export format: ${format}`;
   }
