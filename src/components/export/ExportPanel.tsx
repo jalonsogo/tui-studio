@@ -144,6 +144,7 @@ export function ExportPanel() {
               <option value="blessed">Blessed (Node.js)</option>
               <option value="textual">Textual (Python)</option>
               <option value="html">HTML + CSS</option>
+              <option value="ratatui">Ratatui (Rust)</option>
             </select>
           </div>
         )}
@@ -258,6 +259,8 @@ function getCodeExtension(format: string): string {
       return '.py';
     case 'html':
       return '.html';
+    case 'ratatui':
+      return '.rs';
     default:
       return '.txt';
   }
