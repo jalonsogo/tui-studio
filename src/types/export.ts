@@ -6,7 +6,8 @@ export type ExportFormatId =
   | 'bubbletea-go'
   | 'blessed-js'
   | 'textual-python'
-  | 'tview-go';
+  | 'tview-go'
+  | 'ratatui';
 
 export interface ExportFormat {
   id: ExportFormatId;
@@ -50,6 +51,10 @@ export interface BlessedExportSettings extends ExportSettings {
 export interface TextualExportSettings extends ExportSettings {
   useAsyncIO: boolean;
   includeCSS: boolean;
+}
+
+export interface RatatuiExportSettings extends ExportSettings {
+  // Rust/Ratatui specific settings (no useAsyncIO — that is a Python concept)
 }
 
 // Project export
