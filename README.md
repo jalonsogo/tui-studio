@@ -26,6 +26,17 @@ A Figma-like visual editor for designing Terminal UI applications. Drag-and-drop
 - **Gradient Backgrounds** — Add linear gradients to any element background with angle control and N color stops; rendered as discrete character-cell bands matching real ANSI terminal output
 - **Settings** — Accent color presets, dark/light mode toggle, and default download folder
 
+
+## Star History
+
+<a href="https://www.star-history.com/?repos=jalonsogo%2Ftui-studio&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=jalonsogo/tui-studio&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=jalonsogo/tui-studio&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=jalonsogo/tui-studio&type=date&legend=top-left" />
+ </picture>
+</a>
+
 ## Quick Start
 
 ```bash
