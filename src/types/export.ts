@@ -53,6 +53,7 @@ export interface TextualExportSettings extends ExportSettings {
   includeCSS: boolean;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface RatatuiExportSettings extends ExportSettings {
   // Rust/Ratatui specific settings (no useAsyncIO — that is a Python concept)
 }
