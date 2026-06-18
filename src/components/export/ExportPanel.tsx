@@ -5,8 +5,7 @@ import { Download, Copy, Eye } from 'lucide-react';
 import { useComponentStore, useCanvasStore } from '../../stores';
 import { exportToText, exportToCode, exportToHtmlFile, ansiToHtml } from '../../utils/export';
 import { saveToDownloadFolder } from '../../utils/downloadManager';
-// ExportFormat is typed as an interface but used as a string in the codebase
-type CodeFormat = any;
+import type { ExportFormatId } from '../../types/export';
 
 type ExportMode = 'preview' | 'text' | 'code';
 
@@ -16,7 +15,7 @@ export function ExportPanel() {
 
   const [mode, setMode] = useState<ExportMode>('preview');
   const [textFormat, setTextFormat] = useState<'text' | 'ansi' | 'ansi256' | 'trueColor'>('ansi');
-  const [codeFormat, setCodeFormat] = useState('opentui');
+  const [codeFormat, setCodeFormat] = useState<ExportFormatId | 'text'>('opentui');
   const [copied, setCopied] = useState(false);
 
   const getOutput = () => {
@@ -24,7 +23,7 @@ export function ExportPanel() {
       if (codeFormat === 'html') {
         return exportToHtmlFile(componentStore.root, canvasStore.width, canvasStore.height);
       }
-      return exportToCode(componentStore.root, codeFormat as CodeFormat);
+      return exportToCode(componentStore.root, codeFormat);
     }
     return exportToText(componentStore.root, {
       format: textFormat,
@@ -44,7 +43,7 @@ export function ExportPanel() {
       mode === 'code'
         ? codeFormat === 'html'
           ? exportToHtmlFile(componentStore.root, canvasStore.width, canvasStore.height)
-          : exportToCode(componentStore.root, codeFormat as CodeFormat)
+          : exportToCode(componentStore.root, codeFormat)
         : exportToText(componentStore.root, {
             format: textFormat,
             width: canvasStore.width,
@@ -135,7 +134,7 @@ export function ExportPanel() {
             <label className="text-sm font-medium mb-2 block">Framework</label>
             <select
               value={codeFormat}
-              onChange={(e) => setCodeFormat(e.target.value)}
+              onChange={(e) => setCodeFormat(e.target.value as ExportFormatId | 'text')}
               className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm"
             >
               <option value="opentui">OpenTUI (React)</option>
@@ -230,14 +229,14 @@ function TextOutput({ format, width, height }: { format: string; width: number; 
   );
 }
 
-function CodeOutput({ format }: { format: string }) {
+function CodeOutput({ format }: { format: ExportFormatId | 'text' }) {
   const componentStore = useComponentStore();
   const canvasStore = useCanvasStore();
 
   const output =
     format === 'html'
       ? exportToHtmlFile(componentStore.root, canvasStore.width, canvasStore.height)
-      : exportToCode(componentStore.root, format as CodeFormat);
+      : exportToCode(componentStore.root, format as ExportFormatId);
 
   return (
     <pre className="text-xs font-mono bg-secondary p-4 rounded overflow-auto border border-border">

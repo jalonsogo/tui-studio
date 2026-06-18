@@ -1,13 +1,13 @@
 // Export format types
 
 export type ExportFormatId =
-  | 'opentui-react'
-  | 'ink-react'
-  | 'bubbletea-go'
-  | 'blessed-js'
-  | 'textual-python'
-  | 'tview-go'
-  | 'ratatui';
+  | 'ink'
+  | 'opentui'
+  | 'bubbletea'
+  | 'blessed'
+  | 'textual'
+  | 'ratatui'
+  | 'html';
 
 export interface ExportFormat {
   id: ExportFormatId;
@@ -19,7 +19,7 @@ export interface ExportFormat {
 }
 
 export interface ExportSettings {
-  format: ExportFormatId;
+  format: ExportFormatId | 'text';
   fileName: string;
   includeComments: boolean;
   includeUsageExample: boolean;

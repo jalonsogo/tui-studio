@@ -1,4 +1,5 @@
 import type { ComponentNode } from '../../../types';
+import { escRust } from '../escape';
 
 export function exportToRatatui(root: ComponentNode): string {
   return `use std::io;
@@ -260,6 +261,3 @@ function ratatuiListItems(node: ComponentNode): string {
   return items.join(', ');
 }
 
-function escRust(s: string): string {
-  return `"${String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`;
-}

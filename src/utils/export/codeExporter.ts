@@ -2,6 +2,7 @@
 
 import type { ComponentNode } from '../../types';
 import { exportToRatatui } from './exporters/ratatui';
+import { escJsx, escGo, escPy } from './escape';
 
 /**
  * Export design to framework-specific code
@@ -294,12 +295,7 @@ function inkTextProps(node: ComponentNode): string {
 }
 
 /** Escape characters that are special in JSX text content */
-function escJsx(s: string): string {
-  return s.replace(
-    /[{}<>&]/g,
-    (c) => ({ '{': '&#123;', '}': '&#125;', '<': '&lt;', '>': '&gt;', '&': '&amp;' })[c] || c
-  );
-}
+// escJsx is imported from ./escape
 
 // ── OpenTUI ───────────────────────────────────────────────────────────────────
 
@@ -390,8 +386,8 @@ func main() {
 
 function generateBubbleTeaView(node: ComponentNode, indent: number): string {
   const spaces = '  '.repeat(indent);
-  if (node.type === 'Text') return `${spaces}return "${node.props.content || 'Text'}"\n`;
-  return `${spaces}return "Component: ${node.type}"\n`;
+  if (node.type === 'Text') return `${spaces}return "${escGo(String(node.props.content || 'Text'))}"\n`;
+  return `${spaces}return "Component: ${escGo(node.type)}"\n`;
 }
 
 // ── Blessed ───────────────────────────────────────────────────────────────────
@@ -455,14 +451,14 @@ if __name__ == "__main__":
 
 function generateTextualComponents(node: ComponentNode, indent: number): string {
   const spaces = '  '.repeat(indent);
-  if (node.type === 'Text') return `${spaces}yield Static("${node.props.content || 'Text'}")\n`;
-  if (node.type === 'Button') return `${spaces}yield Button("${node.props.label || 'Button'}")\n`;
+  if (node.type === 'Text') return `${spaces}yield Static("${escPy(String(node.props.content || 'Text'))}")\n`;
+  if (node.type === 'Button') return `${spaces}yield Button("${escPy(String(node.props.label || 'Button'))}")\n`;
   if (node.type === 'TextInput')
-    return `${spaces}yield Input(placeholder="${node.props.placeholder || ''}")\n`;
+    return `${spaces}yield Input(placeholder="${escPy(String(node.props.placeholder || ''))}")\n`;
 
   let result = '';
   for (const child of node.children) result += generateTextualComponents(child, indent);
-  return result || `${spaces}yield Static("${node.type}")\n`;
+  return result || `${spaces}yield Static("${escPy(node.type)}")\n`;
 }
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
